@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import forestImage from "../../../assets/DisplayImg.png";
 
 const stats = [
   { value: 10000, suffix: "", label: "Trees Targeted" },
@@ -16,8 +17,14 @@ function useCountUp(target: number, start: boolean, duration = 1800) {
 
     const step = (timestamp: number) => {
       if (startTime === null) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
+
+      const progress = Math.min(
+        (timestamp - startTime) / duration,
+        1
+      );
+
       const eased = 1 - Math.pow(1 - progress, 3);
+
       setValue(Math.floor(eased * target));
 
       if (progress < 1) {
@@ -28,6 +35,7 @@ function useCountUp(target: number, start: boolean, duration = 1800) {
     };
 
     const frame = requestAnimationFrame(step);
+
     return () => cancelAnimationFrame(frame);
   }, [start, target, duration]);
 
@@ -48,17 +56,13 @@ function StatItem({
   const count = useCountUp(value, start);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
-      <p
-        style={{ fontFamily: "'Poppins', sans-serif" }}
-        className="text-[28px] sm:text-[40px] md:text-[52px] font-extrabold text-white leading-none whitespace-nowrap"
-      >
-        {count.toLocaleString()} {suffix}
+    <div className="flex flex-1 flex-col items-center justify-center px-2 text-center">
+      <p className="whitespace-nowrap text-[28px] font-extrabold leading-none text-white sm:text-[40px] md:text-[52px]">
+        {count.toLocaleString()}
+        {suffix}
       </p>
-      <p
-        style={{ fontFamily: "'Poppins', sans-serif" }}
-        className="text-[11px] sm:text-[13px] md:text-[15px] text-white/80 mt-2 max-w-[180px] leading-snug"
-      >
+
+      <p className="mt-2 max-w-[180px] text-[11px] leading-snug text-white/85 sm:text-[13px] md:text-[15px]">
         {label}
       </p>
     </div>
@@ -70,8 +74,9 @@ export default function StatsCounter() {
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
+    const section = sectionRef.current;
+
+    if (!section) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -83,20 +88,30 @@ export default function StatsCounter() {
       { threshold: 0.3 }
     );
 
-    observer.observe(el);
+    observer.observe(section);
+
     return () => observer.disconnect();
   }, []);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
-      `}</style>
-      <section
-        ref={sectionRef}
-        className="w-full my-30 h-[160px] sm:h-[200px] md:h-[240px] bg-[#11512a]"
-      >
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-full flex flex-row items-center divide-x divide-white/20">
+    <section
+      ref={sectionRef}
+      className="relative h-[200px] w-full overflow-hidden sm:h-[240px] md:h-[230px]"
+    >
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-fixed bg-no-repeat"
+        style={{
+          backgroundImage: `url(${forestImage})`,
+        }}
+      />
+
+      {/* Green overlay */}
+      <div className="absolute inset-0 bg-[#2f2d3b]/80" />
+
+      {/* Stats */}
+      <div className="relative z-10 mx-auto h-full max-w-[1200px] px-4 sm:px-6">
+        <div className="flex h-full items-center divide-x divide-white/25">
           {stats.map((stat) => (
             <StatItem
               key={stat.label}
@@ -107,7 +122,7 @@ export default function StatsCounter() {
             />
           ))}
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
