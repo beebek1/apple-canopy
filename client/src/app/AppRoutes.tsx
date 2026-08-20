@@ -5,6 +5,7 @@ import { ProtectedRoute, PublicRoute } from "./guards/ProtectedRoute";
 import NotFoundPage from "../shared/components/NotFound";
 
 import Dashboard from "../modules/Dashboard/DashboardPage";
+import Blogs from "../modules/Blogs/Blogs";
 
 type JwtPayload = {
   role?: string;
@@ -40,6 +41,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
         <Route path="/ez" element={<Dashboard />} />
+        <Route path="/blogs" element={<Blogs />} />
         <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
