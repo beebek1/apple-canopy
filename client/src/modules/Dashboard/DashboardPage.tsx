@@ -5,6 +5,8 @@ import Placeholder2 from "../../assets/DisplayImg.png";
 import Placeholder3 from "../../assets/DisplayImg.png";
 import StatsCounter from "./Components/StatsCounter";
 import Blogs from "./Components/Blogs";
+import founderSection from "./Components/FounderInfo";
+import FounderSection from "./Components/FounderInfo";
 
 
 const SLIDE_DURATION = 5000;
@@ -145,7 +147,8 @@ export default function Hero({ slides = dummySlides }: { slides?: Slide[] }) {
 
         {/* Stats Counter */}
         <StatsCounter/>
-        <hr className="w-full border-t border-gray-300" />
+        <FounderSection/>
+        {/* <hr className="w-full border-t border-gray-300" /> */}
         <Blogs/>
     </div>
   );
