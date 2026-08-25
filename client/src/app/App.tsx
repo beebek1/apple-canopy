@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast'
 import ScrollToTop from '../shared/components/ScrollToTop'
 import AppRoutes from './AppRoutes'
 import Footer from '../shared/components/Footer'
+import Auth from "../modules/admin/Auth";
 
 const App: React.FC = () => {
   return (
@@ -16,6 +17,7 @@ const App: React.FC = () => {
         <AppRoutes/>
       </div>
       <Footer/>
+      <Auth/>
     </BrowserRouter>
   );
 };

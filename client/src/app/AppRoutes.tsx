@@ -4,8 +4,12 @@ import { jwtDecode } from "jwt-decode";
 import { ProtectedRoute, PublicRoute } from "./guards/ProtectedRoute";
 import NotFoundPage from "../shared/components/NotFound";
 
-import Dashboard from "../modules/Dashboard/DashboardPage";
-import Blogs from "../modules/Blogs/Blogs";
+import Dashboard from "../modules/dashboard/DashboardPage";
+import BlogList from "../modules/blogs/UserBlogList";
+import BlogPage from "../modules/blogs/UserBlogPage";
+import Orchards from "../modules/orchards/ImpactMap";
+import AdminBlogList from "../modules/admin/AdminBlogList";
+import BlogEditor from "../modules/admin/BlogEditor";
 
 type JwtPayload = {
   role?: string;
@@ -40,8 +44,12 @@ const DenyRolesRoute: React.FC<{ deniedRoles: string[]; redirectTo: string }> = 
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
-        <Route path="/ez" element={<Dashboard />} />
-        <Route path="/blogs" element={<Blogs />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/blogs" element={<BlogList />} />
+        <Route path="/blogs/admin" element={<AdminBlogList />} />
+        <Route path="/blogs/1" element={<BlogPage />} />
+        <Route path="/blogs/admin/new" element={<BlogEditor />} />
+        <Route path="/orchards" element={<Orchards />} />
         <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
