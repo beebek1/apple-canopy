@@ -1,5 +1,5 @@
 import React from "react";
-import founderPhoto from "../../../assets/DisplayImg.png";
+import founderPhoto from "../../../assets/FounderImg.jpeg";
 import illustration from "../../../assets/HIll.jpeg";
 
 export default function FounderSection() {

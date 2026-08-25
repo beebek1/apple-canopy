@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import Apple from "../../assets/apple.png";
+import Environment from "../../assets/environment.png";
 import Placeholder1 from "../../assets/DisplayImg.png";
 import Placeholder2 from "../../assets/DisplayImg.png";
 import Placeholder3 from "../../assets/DisplayImg.png";
 import StatsCounter from "./Components/StatsCounter";
 import Blogs from "./Components/Blogs";
-import founderSection from "./Components/FounderInfo";
 import FounderSection from "./Components/FounderInfo";
 
 
@@ -120,13 +119,13 @@ export default function Hero({ slides = dummySlides }: { slides?: Slide[] }) {
             {/* Top */}
             <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-[30px] md:pl-[60px]">
 
-                <h1 className="font-poppins text-[2rem] sm:text-[2.5rem] md:text-[clamp(2.5rem,10vw,4rem)] font-extrabold leading-[1.1] tracking-[-0.02em] text-[#990200] text-center md:text-left w-full md:w-[45%] md:flex-none">
+                <h1 className="font-poppins uppercase text-[2rem] sm:text-[2.5rem] md:text-[clamp(2.5rem,10vw,4rem)] font-extrabold leading-[1.1] tracking-[-0.02em] text-[#990200] text-center md:text-left w-full md:w-[45%] md:flex-none">
                     High altitude regions supply freshwater downstream
                 </h1>
 
                 <img
-                    src={Apple}
-                    alt="apple visualization"
+                    src={Environment}
+                    alt="environment visualization"
                     className="w-auto h-auto max-w-[85%] sm:max-w-[70%] md:max-w-[2600px] max-h-[230px] sm:max-h-[280px] md:max-h-[400px] object-contain md:-translate-y-5"
                 />
             </div>
@@ -134,7 +133,7 @@ export default function Hero({ slides = dummySlides }: { slides?: Slide[] }) {
             {/* Bottom */}
             <div className="w-full md:max-w-full ml-auto mt-0 md:mt-[70px] md:pr-[60px] text-center md:text-right">
 
-            <h2 className="font-poppins text-[1.5rem] sm:text-[1.8rem] md:text-[clamp(2rem,8vw,3.5rem)] font-extrabold leading-[1.2] md:leading-[1.15] tracking-[-0.02em] text-[#11512a]">
+            <h2 className="font-poppins text-[1.5rem] uppercase sm:text-[1.8rem] md:text-[clamp(2rem,8vw,3.5rem)] font-extrabold leading-[1.2] md:leading-[1.15] tracking-[-0.02em] text-[#11512a]">
                 Climate threats force youth away, but apple trees generate local income while restoring mountain ecosystems
             </h2>
 

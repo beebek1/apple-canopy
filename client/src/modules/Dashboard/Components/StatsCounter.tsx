@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import forestImage from "../../../assets/DisplayImg.png";
 
 const stats = [
   { value: 10000, suffix: "", label: "Trees Targeted" },
@@ -24,7 +23,6 @@ function useCountUp(target: number, start: boolean, duration = 1800) {
       );
 
       const eased = 1 - Math.pow(1 - progress, 3);
-
       setValue(Math.floor(eased * target));
 
       if (progress < 1) {
@@ -75,7 +73,6 @@ export default function StatsCounter() {
 
   useEffect(() => {
     const section = sectionRef.current;
-
     if (!section) return;
 
     const observer = new IntersectionObserver(
@@ -94,35 +91,28 @@ export default function StatsCounter() {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative h-[200px] w-full overflow-hidden sm:h-[240px] md:h-[230px]"
-    >
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-fixed bg-no-repeat"
-        style={{
-          backgroundImage: `url(${forestImage})`,
-        }}
-      />
+  <section
+    ref={sectionRef}
+    className="relative h-[120px] w-full overflow-hidden bg-[#11512a] sm:h-[160px] md:h-[150px]"
+  >
+    {/* Top fade */}
 
-      {/* Green overlay */}
-      <div className="absolute inset-0 bg-[#2f2d3b]/80" />
-
-      {/* Stats */}
-      <div className="relative z-10 mx-auto h-full max-w-[1200px] px-4 sm:px-6">
-        <div className="flex h-full items-center divide-x divide-white/25">
-          {stats.map((stat) => (
-            <StatItem
-              key={stat.label}
-              value={stat.value}
-              suffix={stat.suffix}
-              label={stat.label}
-              start={inView}
-            />
-          ))}
-        </div>
+    {/* Stats */}
+    <div className="relative z-10 mx-auto h-full max-w-[1200px] px-4 sm:px-6">
+      <div className="flex h-full items-center divide-x divide-white/25">
+        {stats.map((stat) => (
+          <StatItem
+            key={stat.label}
+            value={stat.value}
+            suffix={stat.suffix}
+            label={stat.label}
+            start={inView}
+          />
+        ))}
       </div>
-    </section>
+    </div>
+
+    {/* Bottom fade */}
+  </section>
   );
 }
