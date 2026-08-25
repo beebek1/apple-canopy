@@ -157,6 +157,7 @@ function SubscribeForm() {
 export default function Footer() {
   return (
     <footer className="w-full bg-white font-poppins">
+      <hr className="my-0 w-full border-t border-gray-200" />
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 py-9">
         <div className="flex flex-col md:flex-row md:justify-between gap-10">
           <div className="flex flex-col sm:flex-row gap-30">
