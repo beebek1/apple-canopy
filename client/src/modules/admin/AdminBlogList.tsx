@@ -1,0 +1,538 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search, Pencil, Trash2, ChevronDown } from "lucide-react";
+import ArticleStats from "./components/BlogStats";
+// ---------- Types ----------
+type ArticleStatus = "published" | "draft";
+
+interface Article {
+  id: string;
+  date: string;
+  category: string;
+  heading: string;
+  excerpt: string;
+  image: string;
+  author: string;
+  comments: number;
+  views: number;
+  status: ArticleStatus;
+}
+
+const CATEGORIES = [
+  "Plantation",
+  "Forests",
+  "Wildlife",
+  "Climate",
+  "Community",
+] as const;
+
+const STATUS_OPTIONS: ArticleStatus[] = ["published", "draft"];
+
+// ---------- Dummy data — replace with a fetch to your articles endpoint ----------
+const INITIAL_ARTICLES: Article[] = [
+  {
+    id: "a1",
+    date: "Aug 18",
+    category: "Forests",
+    heading: "Inside The Push To Restore India's Vanishing Mangroves",
+    excerpt:
+      "Along the coast, community nurseries are replanting mangrove belts that once buffered entire villages from storm surge.",
+    image:
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop",
+    author: "Rafia Naseem",
+    comments: 41,
+    views: 14200,
+    status: "published",
+  },
+  {
+    id: "a2",
+    date: "Aug 15",
+    category: "Wildlife",
+    heading: "Camera Traps Reveal A Leopard Population Nobody Knew Existed",
+    excerpt:
+      "A three-year survey across a disputed forest corridor turned up something researchers didn't expect to find intact.",
+    image:
+      "https://images.unsplash.com/photo-1456926631375-92c8ce872def?w=300&h=300&fit=crop",
+    author: "Greyson Ferguson",
+    comments: 87,
+    views: 9800,
+    status: "published",
+  },
+  {
+    id: "a3",
+    date: "Aug 9",
+    category: "Climate",
+    heading: "What A 1.5 Degree World Actually Looks Like For Farmers",
+    excerpt:
+      "Draft notes from a season spent with smallholder farmers adapting planting calendars to a shifting monsoon.",
+    image:
+      "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=300&h=300&fit=crop",
+    author: "Michal Malewicz",
+    comments: 12,
+    views: 2100,
+    status: "draft",
+  },
+  {
+    id: "a4",
+    date: "Aug 4",
+    category: "Plantation",
+    heading: "The Quiet Economics Of A Community-Owned Teak Plantation",
+    excerpt:
+      "A cooperative of 40 families is proving that a managed plantation can outperform a logging concession over 20 years.",
+    image:
+      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=300&h=300&fit=crop",
+    author: "Elena Voss",
+    comments: 6,
+    views: 980,
+    status: "draft",
+  },
+  {
+    id: "a5",
+    date: "Jul 28",
+    category: "Community",
+    heading: "How One Village Turned Its Watershed Into A Shared Asset",
+    excerpt:
+      "Meeting minutes, disputes, and eventually consensus — the slow work of getting eleven households to agree on water.",
+    image:
+      "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=300&h=300&fit=crop",
+    author: "Dorje Lama",
+    comments: 29,
+    views: 5400,
+    status: "published",
+  },
+];
+
+function formatViews(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  return String(n);
+}
+
+function statusLabel(status: ArticleStatus) {
+  return status === "published" ? "Published" : "Draft";
+}
+
+// ---------- Pending action + confirm modal ----------
+type PendingAction =
+  | { type: "delete"; id: string; heading: string }
+  | { type: "status"; id: string; heading: string; newStatus: ArticleStatus }
+  | null;
+
+function ConfirmModal({
+  action,
+  processing,
+  onCancel,
+  onConfirm,
+}: {
+  action: Exclude<PendingAction, null>;
+  processing: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isDelete = action.type === "delete";
+  const title = isDelete
+    ? "Delete this article?"
+    : `Change status to ${statusLabel(action.newStatus)}?`;
+  const message = isDelete
+    ? `"${action.heading}" will be permanently removed. This action can't be undone.`
+    : `"${action.heading}" will be marked as ${statusLabel(
+        action.newStatus
+      ).toLowerCase()}.`;
+  const confirmLabel = isDelete ? "Delete" : "Confirm";
+  const loadingLabel = isDelete ? "Deleting…" : "Saving…";
+  const confirmColor = isDelete ? "#680505" : "#11512a";
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50"
+      onClick={processing ? undefined : onCancel}
+    >
+      <div
+        className="bg-white rounded-xl max-w-sm w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-base font-semibold text-gray-900 mb-2">
+          {title}
+        </h2>
+        <p className="text-sm text-gray-500 leading-relaxed mb-6">
+          {message}
+        </p>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={processing}
+            className="text-sm font-medium text-gray-500 hover:text-gray-800 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={processing}
+            style={{ backgroundColor: confirmColor }}
+            className="text-sm font-medium text-white px-4 py-2 rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed min-w-[92px] text-center"
+          >
+            {processing ? loadingLabel : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Status is chosen from a dropdown menu, confirmed via the modal above
+function StatusDropdown({
+  status,
+  isOpen,
+  onOpen,
+  onSelect,
+}: {
+  status: ArticleStatus;
+  isOpen: boolean;
+  onOpen: () => void;
+  onSelect: (status: ArticleStatus) => void;
+}) {
+  const isPub = status === "published";
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-2 py-1 text-xs font-medium transition-colors cursor-pointer ${
+          isPub
+            ? "bg-[#e9f2ec] text-[#11512a] hover:bg-[#dcebe1]"
+            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+        }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            isPub ? "bg-[#11512a]" : "bg-gray-400"
+          }`}
+        />
+        {statusLabel(status)}
+        <ChevronDown className="w-3 h-3" />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          className="absolute z-10 left-0 mt-1 w-36 rounded-lg border border-gray-200 bg-white shadow-sm py-1"
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              role="option"
+              aria-selected={opt === status}
+              onClick={() => onSelect(opt)}
+              className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  opt === "published" ? "bg-[#11512a]" : "bg-gray-400"
+                }`}
+              />
+              {statusLabel(opt)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type StatusTab = "all" | ArticleStatus;
+
+export default function AdminArticleManager() {
+  const navigate = useNavigate();
+
+  // TODO: replace INITIAL_ARTICLES with data fetched from the backend
+  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
+  const [query, setQuery] = useState("");
+  const [statusTab, setStatusTab] = useState<StatusTab>("all");
+  const [categoryFilter, setCategoryFilter] = useState("All Category");
+  const [catMenuOpen, setCatMenuOpen] = useState(false);
+  const [statusMenuId, setStatusMenuId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const filtered = useMemo(() => {
+    return articles.filter((a) => {
+      const matchesStatus = statusTab === "all" || a.status === statusTab;
+      const matchesCategory =
+        categoryFilter === "All Category" || a.category === categoryFilter;
+      const matchesQuery = a.heading
+        .toLowerCase()
+        .includes(query.toLowerCase());
+      return matchesStatus && matchesCategory && matchesQuery;
+    });
+  }, [articles, query, statusTab, categoryFilter]);
+
+  const counts = useMemo(
+    () => ({
+      all: articles.length,
+      published: articles.filter((a) => a.status === "published").length,
+      draft: articles.filter((a) => a.status === "draft").length,
+      totalViews: articles.reduce((sum, a) => sum + a.views, 0),
+    }),
+    [articles]
+  );
+
+  function goToEdit(id: string) {
+    // TODO: point this at your actual edit route
+    navigate(`/admin/articles/${id}/edit`);
+  }
+
+  function requestStatusChange(article: Article, newStatus: ArticleStatus) {
+    setStatusMenuId(null);
+    if (newStatus === article.status) return;
+    setPendingAction({
+      type: "status",
+      id: article.id,
+      heading: article.heading,
+      newStatus,
+    });
+  }
+
+  function requestDelete(article: Article) {
+    setPendingAction({ type: "delete", id: article.id, heading: article.heading });
+  }
+
+  function cancelPendingAction() {
+    if (processing) return;
+    setPendingAction(null);
+  }
+
+  // TODO: swap the setTimeout for the real PATCH /DELETE call to your backend
+  function confirmPendingAction() {
+    if (!pendingAction) return;
+    setProcessing(true);
+    setTimeout(() => {
+      if (pendingAction.type === "delete") {
+        setArticles((prev) => prev.filter((a) => a.id !== pendingAction.id));
+      } else {
+        setArticles((prev) =>
+          prev.map((a) =>
+            a.id === pendingAction.id
+              ? { ...a, status: pendingAction.newStatus }
+              : a
+          )
+        );
+      }
+      setProcessing(false);
+      setPendingAction(null);
+    }, 700);
+  }
+
+  return (
+    <div className="min-h-screen bg-white font-['Poppins',_sans-serif]">
+        {/* Header band */}
+        <div
+        className="relative overflow-hidden px-4 sm:px-6 py-9 sm:py-11"
+        style={{
+            background: "linear-gradient(135deg, #7a0a0a 0%, #680505 55%, #4a0303 100%)",
+        }}
+        >
+        <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+            backgroundImage:
+                "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+            backgroundSize: "28px 28px",
+            }}
+        />
+        <div
+            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 blur-3xl"
+            style={{ backgroundColor: "#11512a" }}
+        />
+
+        <div className="relative mx-auto max-w-5xl">
+            <h1 className="text-2xl sm:text-3xl uppercase font-semibold text-white tracking-tight">
+            Your articles
+            </h1>
+            <p className="text-sm text-white/70 mt-1.5 max-w-md">
+            Edit, publish, and remove articles across the site.
+            </p>
+        </div>
+        </div>
+
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
+        {/* Stat strip */}
+        <ArticleStats
+        total={counts.all}
+        published={counts.published}
+        drafts={counts.draft}
+        totalViews={counts.totalViews}
+        />
+
+        {/* Status tabs — underline style, brand green indicator */}
+        <div className="flex items-center gap-5 border-b border-gray-200 mb-4">
+          {(
+            [
+              { key: "all", label: "All" },
+              { key: "published", label: "Published" },
+              { key: "draft", label: "Drafts" },
+            ] as { key: StatusTab; label: string }[]
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusTab(tab.key)}
+              className="whitespace-nowrap pb-3 text-sm font-medium -mb-px transition-colors cursor-pointer"
+              style={{
+                borderBottom:
+                  statusTab === tab.key
+                    ? "2px solid #11512a"
+                    : "2px solid transparent",
+                color: statusTab === tab.key ? "#11512a" : "#6b7280",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by title"
+              className="w-full text-sm rounded-full border border-gray-200 bg-white pl-9 pr-4 py-2 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+            />
+          </div>
+
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setCatMenuOpen((o) => !o)}
+              className="w-full sm:w-auto flex items-center justify-between gap-1.5 text-sm rounded-full border border-gray-200 bg-white px-4 py-2 text-gray-600 hover:border-gray-400 transition-colors cursor-pointer"
+            >
+              {categoryFilter}
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            {catMenuOpen && (
+              <div className="absolute z-10 right-0 mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-sm py-1">
+                {["All Category", ...CATEGORIES].map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setCategoryFilter(c);
+                      setCatMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="border-t border-gray-200">
+          {filtered.length === 0 && (
+            <p className="text-sm text-gray-400 py-14 text-center">
+              No articles match your filters.
+            </p>
+          )}
+
+          <div className="divide-y divide-gray-100">
+            {filtered.map((article) => (
+              <div
+                key={article.id}
+                className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 py-7 sm:py-8"
+              >
+                <div className="hidden sm:block w-24 h-24 shrink-0 rounded-md overflow-hidden bg-gray-100">
+                  <img
+                    src={article.image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                    <StatusDropdown
+                      status={article.status}
+                      isOpen={statusMenuId === article.id}
+                      onOpen={() =>
+                        setStatusMenuId((cur) =>
+                          cur === article.id ? null : article.id
+                        )
+                      }
+                      onSelect={(newStatus) =>
+                        requestStatusChange(article, newStatus)
+                      }
+                    />
+                    <span className="text-xs text-gray-400">
+                      {article.category}
+                    </span>
+                  </div>
+
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 leading-snug">
+                    {article.heading}
+                  </h2>
+
+                  <p className="hidden sm:block text-sm text-gray-500 leading-relaxed mt-1.5 max-w-2xl">
+                    {article.excerpt}
+                  </p>
+
+                  <div className="flex items-center gap-2 flex-wrap mt-2.5 text-xs text-gray-500">
+                    <span>{article.author}</span>
+                    <span>·</span>
+                    <span>{article.date}</span>
+                    <span>·</span>
+                    <span>{formatViews(article.views)} views</span>
+                    <span>·</span>
+                    <span>{article.comments} comments</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => goToEdit(article.id)}
+                    title="Edit"
+                    aria-label={`Edit ${article.heading}`}
+                    className="p-2.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => requestDelete(article)}
+                    title="Delete"
+                    aria-label={`Delete ${article.heading}`}
+                    className="p-2.5 rounded-full text-gray-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#680505")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "")}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {pendingAction && (
+        <ConfirmModal
+          action={pendingAction}
+          processing={processing}
+          onCancel={cancelPendingAction}
+          onConfirm={confirmPendingAction}
+        />
+      )}
+    </div>
+  );
+}
