@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { FiMessageCircle, FiShare2, FiArrowRight } from "react-icons/fi";
-import Sidebar from "./Sidebar";
+import Sidebar from "./components/Sidebar";
 
 // ---------- Types ----------
 interface Article {
