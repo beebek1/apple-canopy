@@ -11,3 +11,14 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model admin {
+  user_id                  Int       @id @default(autoincrement())
+  username                 String    @unique @db.VarChar(255)
+  email                    String?   @unique @db.VarChar(255)
+  password                 String    @db.VarChar(255)
+  verificationToken        String?   @db.VarChar(255)
+  verificationTokenExpires DateTime? @db.Timestamptz(6)
+  createdAt                DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime? @updatedAt @db.Timestamptz(6)
+}
