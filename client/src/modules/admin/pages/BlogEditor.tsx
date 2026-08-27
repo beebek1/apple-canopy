@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, Eye, ImagePlus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { CATEGORIES, createEmptyDraft, fileToDataUrl, hasContent } from "./components/types";
-import type { BlogPostDraft } from "./components/types";
-import ContentFlow from "./components/ContentFlow";
-import type { ContentFlowHandle } from "./components/ContentFlow";
-import ArticlePreview from "./components/ArticlePreview";
+import { CATEGORIES, createEmptyDraft, fileToDataUrl, hasContent } from "../components/types";
+import type { BlogPostDraft } from "../components/types";
+import ContentFlow from "../components/ContentFlow";
+import type { ContentFlowHandle } from "../components/ContentFlow";
+import ArticlePreview from "../components/ArticlePreview";
 
 interface BlogEditorProps {
   // Pass an existing draft when editing an article; omit to start a new one.

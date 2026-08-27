@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Pencil, Trash2, ChevronDown } from "lucide-react";
-import ArticleStats from "./components/BlogStats";
+import ArticleStats from "../components/BlogStats";
 // ---------- Types ----------
 type ArticleStatus = "published" | "draft";
 
