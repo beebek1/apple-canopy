@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Logo from "../../assets/logo.png";
 import { Link } from "react-router-dom";
+import { getCurrentUserApi } from "../../modules/admin/auth.api";
 
 const navLinks = [
   {
@@ -23,6 +24,21 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Same session check ProtectedRoute uses — no shared hook, just the
+    // direct call, so the Blogs link knows where to point.
+    const checkAuth = async () => {
+      try {
+        await getCurrentUserApi();
+        setIsAdmin(true);
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0);
@@ -72,6 +88,11 @@ export default function Navbar() {
             {navLinks.map((link) => {
               const hasChildren = !!link.children?.length;
               const isOpen = openDropdown === link.label;
+              // Only "Blogs" changes destination based on who's viewing —
+              // an admin lands on the admin list, everyone else on the
+              // public one. Every other link is unaffected.
+              const href =
+                link.label === "Blogs" && isAdmin ? "/admin/blogs" : link.href;
 
               return (
                 <div
@@ -81,7 +102,7 @@ export default function Navbar() {
                   onMouseLeave={() => hasChildren && closeSoon()}
                 >
                   <a
-                    href={link.href}
+                    href={href}
                     onClick={(e) => {
                       if (hasChildren) {
                         e.preventDefault();
