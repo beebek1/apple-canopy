@@ -153,7 +153,7 @@ export function markdownToHtml(text: string): string {
         case "strike":
           return `<s>${escaped}</s>`;
         case "link":
-          return `<a href="${escapeHtml(token.href ?? "")}">${escaped}</a>`;
+          return `<a href="${escapeHtml(token.href ?? "")}" target="_blank" rel="noopener noreferrer" style="color:#11512a;text-decoration:underline;font-weight:600;cursor:pointer;">${escaped}</a>`;
         default:
           return escaped;
       }

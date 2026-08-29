@@ -20,6 +20,7 @@ export default function SelectionToolbar({ targetRef }: SelectionToolbarProps) {
 
   useEffect(() => {
     function handleSelectionChange() {
+      if (linkPromptOpen) return;
       const el = targetRef.current;
       const sel = window.getSelection();
       if (!el || !sel || sel.rangeCount === 0 || sel.isCollapsed) {
@@ -40,7 +41,7 @@ export default function SelectionToolbar({ targetRef }: SelectionToolbarProps) {
 
     document.addEventListener("selectionchange", handleSelectionChange);
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [targetRef]);
+    }, [targetRef, linkPromptOpen]);
 
   // Closes the toolbar if focus leaves the editable block entirely (e.g.
   // clicking elsewhere on the page), same idea as the old blur handler.
@@ -55,6 +56,12 @@ export default function SelectionToolbar({ targetRef }: SelectionToolbarProps) {
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [targetRef]);
+
+  function normalizeUrl(url: string): string {
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
 
   function restoreSelection() {
     const range = savedRangeRef.current;
@@ -74,13 +81,29 @@ export default function SelectionToolbar({ targetRef }: SelectionToolbarProps) {
   function applyLink() {
     const url = linkValue.trim();
     if (!url) return;
+    const normalized = normalizeUrl(url);
+
     targetRef.current?.focus();
     restoreSelection();
-    document.execCommand("createLink", false, url);
+    document.execCommand("createLink", false, normalized);
+
+    const sel = window.getSelection();
+    const node = sel?.anchorNode;
+    const linkEl =
+      node instanceof HTMLElement ? node.closest("a") : node?.parentElement?.closest("a");
+    if (linkEl) {
+      linkEl.style.color = "#11512a";
+      linkEl.style.textDecoration = "underline";
+      linkEl.style.fontWeight = "600";
+      linkEl.style.cursor = "pointer";
+      linkEl.setAttribute("target", "_blank");
+      linkEl.setAttribute("rel", "noopener noreferrer");
+    }
+
     setPos(null);
     setLinkPromptOpen(false);
     setLinkValue("");
-  }
+}
 
   if (!pos) return null;
 
