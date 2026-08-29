@@ -3,7 +3,6 @@ import { z } from "zod";
 
 export const authLoginSchema = z.object({
   body: z.object({
-    email: z.email({ message: "invalid email format" }),
     username: z.string(),
     password: z
       .string()

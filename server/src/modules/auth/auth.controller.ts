@@ -24,12 +24,18 @@ export const registerUser = asyncHandler(
 
 export const loginUser = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const user = await userService.login(req.body);
+    const token = await userService.login(req.body);
+
+    res.cookie("accessToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "You are logged in Successfully",
-      data: user,
     });
   },
 );
@@ -42,6 +48,15 @@ export const verifyEmail = asyncHandler(
       success: true,
       message: "Kindly verify yourself via the email",
       data: user,
+    });
+  },
+);
+
+export const getCurrentUser = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Authenticated"
     });
   },
 );
