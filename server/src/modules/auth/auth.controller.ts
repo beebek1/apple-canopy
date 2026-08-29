@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import * as userService from "./auth.services.js";
+import * as userService from "./auth.service.js";
 import { StatusCodes } from "http-status-codes";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 import { ApiError } from "../../utils/apiError.js";
