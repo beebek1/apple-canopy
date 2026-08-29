@@ -1,50 +1,46 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import getUserRole, { clearToken } from "./AuthRole.tsx";
+import { getCurrentUserApi } from "../../modules/admin/auth.api";
+import Loading from "../../shared/components/Loading";
 
 interface ProtectedRouteProps {
-  allowedRoles: string[];
   redirectTo?: string;
   children?: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  allowedRoles,
-  redirectTo = "/signin",
+  redirectTo = "/",
   children,
 }) => {
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    const run = async () => {
-      const userInfo = await getUserRole();
-      setRole(userInfo?.role ?? null);
-      setLoading(false);
+    const checkAuth = async () => {
+      try {
+        await getCurrentUserApi();
+        setAuthenticated(true);
+      } catch {
+        setAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
     };
-    run();
+
+    checkAuth();
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#080808] text-white flex items-center justify-center">
-        <p className="text-xs tracking-widest uppercase text-gray-500">Authorizing...</p>
-      </div>
+      <Loading/>
     );
   }
 
-  if (!role || !allowedRoles.includes(role)) {
-    clearToken();
+  if (!authenticated) {
     return <Navigate to={redirectTo} replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;
 };
 
-const PublicRoute: React.FC = () => {
-  const token = localStorage.getItem("jwtToken");
-  if (token) return <Navigate to="/" replace />;
-  return <Outlet />;
-};
-
-export { ProtectedRoute, PublicRoute };
+export { ProtectedRoute };
