@@ -329,34 +329,47 @@ export default function AdminArticleManager() {
   return (
     <div className="min-h-screen bg-white font-['Poppins',_sans-serif]">
         {/* Header band */}
-        <div
+      <div
         className="relative overflow-hidden px-4 sm:px-6 py-9 sm:py-11"
         style={{
-            background: "linear-gradient(135deg, #7a0a0a 0%, #680505 55%, #4a0303 100%)",
+          background:
+            "linear-gradient(135deg, #7a0a0a 0%, #680505 55%, #4a0303 100%)",
         }}
-        >
+      >
         <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
             backgroundImage:
-                "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+              "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
             backgroundSize: "28px 28px",
-            }}
-        />
-        <div
-            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 blur-3xl"
-            style={{ backgroundColor: "#11512a" }}
+          }}
         />
 
-        <div className="relative mx-auto max-w-5xl">
+        <div
+          className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 blur-3xl"
+          style={{ backgroundColor: "#11512a" }}
+        />
+
+        <div className="relative mx-auto max-w-5xl flex items-center justify-between gap-6">
+          <div>
             <h1 className="text-2xl sm:text-3xl uppercase font-semibold text-white tracking-tight">
-            Your articles
+              Your articles
             </h1>
+
             <p className="text-sm text-white/70 mt-1.5 max-w-md">
-            Edit, publish, and remove articles across the site.
+              Edit, publish, and remove articles across the site.
             </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/admin/blogs/new")}
+            className="shrink-0 px-7 py-3.5 rounded-lg bg-white/10 border border-white/10 text-white/90 text-sm font-medium hover:bg-white/15 transition-colors cursor-pointer"
+          >
+            Create New
+          </button>
         </div>
-        </div>
+      </div>
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
         {/* Stat strip */}
