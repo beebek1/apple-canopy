@@ -87,7 +87,9 @@ export default function Auth({ path = "/auth", onSubmit }: AuthProps) {
         error: (err) => err?.response?.data?.message || "Login failed",
       });
 
-      handleClose(); // close (i.e. return to previous route) on success
+      setTimeout(() => {
+        handleClose();
+      }, 800);
     } catch {
       // toast.promise already surfaced the error toast; swallow here
       // so submitting still resets in `finally` without an unhandled rejection.
