@@ -6,30 +6,22 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
-    role: "admin";
+    id: number;
+    username: string;
   };
 }
 
 type AccessTokenPayload = {
-  id: string;
-  role: "admin";
+  id: number;
+  username: string;
   iat?: number;
   exp?: number;
 };
 
 export const verifyAccessToken = asyncHandler(
   async (req: AuthRequest, _res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.accessToken;
 
-    if (!authHeader?.startsWith("Bearer ")) {
-      throw new ApiError(
-        StatusCodes.UNAUTHORIZED,
-        "Unauthorized: Invalid token format",
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
     if (!token) {
       throw new ApiError(
         StatusCodes.UNAUTHORIZED,
@@ -38,10 +30,11 @@ export const verifyAccessToken = asyncHandler(
     }
 
     let decoded: AccessTokenPayload;
+
     try {
       decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET as string,
+        process.env.JWT_SECRET!,
       ) as AccessTokenPayload;
     } catch {
       throw new ApiError(
@@ -50,7 +43,7 @@ export const verifyAccessToken = asyncHandler(
       );
     }
 
-    if (!decoded?.id || !decoded?.role) {
+    if (!decoded?.id || !decoded?.username) {
       throw new ApiError(
         StatusCodes.UNAUTHORIZED,
         "Unauthorized: Invalid token payload",
@@ -58,8 +51,8 @@ export const verifyAccessToken = asyncHandler(
     }
 
     req.user = {
-      id: String(decoded.id),
-      role: decoded.role,
+      id: decoded.id,
+      username: decoded.username,
     };
 
     next();
