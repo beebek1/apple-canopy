@@ -1,10 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ElementType, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Plus, Heading2, ListOrdered, Quote, ImagePlus, Trash2, X } from "lucide-react";
-import { fileToDataUrl, newBlockId } from "./types";
+import { newBlockId } from "./types";
 import type { BlockType, ContentBlock, ParagraphBlock } from "./types";
+import { uploadImageApi } from "../auth.api";
 import SelectionToolbar from "./SelectionToolbar";
 import { InlineText, htmlToMarkdown, markdownToHtml } from "./RichText";
+import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
 
 interface ContentFlowProps {
   blocks: ContentBlock[];
@@ -739,6 +741,15 @@ function ParagraphBlockEditor({
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onMouseDown={(e) => {
+          const target = e.target as HTMLElement;
+          const anchor = target.closest("a");
+          if (anchor) {
+            e.preventDefault();
+            const href = anchor.getAttribute("href");
+            if (href) window.open(href, "_blank", "noopener,noreferrer");
+          }
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) onEnter(e);
           else if (e.key === "Backspace") onBackspace(e);
@@ -765,12 +776,20 @@ function ImageBlockEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Uploads the file to the backend immediately and stores the returned
+  // path in the block, instead of stuffing a base64 blob into state. Path
+  // is what gets persisted, so `content` never carries raw image bytes.
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      onUpdate({ src: dataUrl } as Partial<ContentBlock>);
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await uploadImageApi(formData);
+      onUpdate({ src: res.data.data.path } as Partial<ContentBlock>);
+    } catch {
+      // Upload failed — leave the block without a src so the "click to
+      // upload" placeholder stays visible instead of showing a broken image.
     } finally {
       setUploading(false);
     }
@@ -787,7 +806,7 @@ function ImageBlockEditor({
       />
       {block.src ? (
         <div className="relative rounded-lg overflow-hidden bg-gray-100">
-          <img src={block.src} alt="" className="w-full max-h-64 sm:max-h-[420px] object-cover" />
+          <img src={resolveMediaUrl(block.src)} alt="" className="w-full max-h-64 sm:max-h-[420px] object-cover" />
         </div>
       ) : (
         <button
@@ -864,12 +883,12 @@ export function ContentFlowReadOnly({ blocks }: { blocks: ContentBlock[] }) {
               </blockquote>
             ) : null;
 
-          case "image":
-            return block.src ? (
-              <figure key={block.id}>
-                <div className="rounded-lg overflow-hidden bg-gray-100">
-                  <img src={block.src} alt={block.caption} className="w-full object-cover" />
-                </div>
+            case "image":
+              return block.src ? (
+                <figure key={block.id}>
+                  <div className="rounded-lg overflow-hidden bg-gray-100">
+                    <img src={resolveMediaUrl(block.src)} alt={block.caption} className="w-full object-cover" />
+                  </div>
                 {block.caption && (
                   <figcaption className="text-xs text-gray-400 mt-2 text-center">{block.caption}</figcaption>
                 )}
