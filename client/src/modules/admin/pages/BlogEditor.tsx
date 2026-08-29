@@ -1,23 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, Eye, ImagePlus, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { CATEGORIES, createEmptyDraft, fileToDataUrl, hasContent } from "../components/types";
+import { MdArrowBack, MdKeyboardArrowDown, MdVisibility, MdAddPhotoAlternate, MdClose, MdCloudSync, MdOutlineSyncDisabled, MdSync, MdCloudDone} from "react-icons/md";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { CATEGORIES, createEmptyDraft, hasContent } from "../components/types";
 import type { BlogPostDraft } from "../components/types";
 import ContentFlow from "../components/ContentFlow";
 import type { ContentFlowHandle } from "../components/ContentFlow";
 import ArticlePreview from "../components/ArticlePreview";
+import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
+import { uploadImageApi, saveDraftApi, getPostApi } from "../auth.api";
 
 interface BlogEditorProps {
   // Pass an existing draft when editing an article; omit to start a new one.
+  // Rarely needed now that the component fetches by :blogId itself, but
+  // kept for anywhere that still wants to hand one in directly.
   initialDraft?: BlogPostDraft;
   // Author is derived from the logged-in user — decode it from the JWT /
   // auth context wherever <BlogEditor /> gets mounted, and pass it in here.
-  // It is never an editable field.
+  // No longer shown in the top bar, but still used by ArticlePreview.
   authorName?: string;
-  // TODO: wire these up to your real API calls.
-  onSaveDraft?: (draft: BlogPostDraft) => Promise<void> | void;
+  // TODO: wire this up to your real API call.
   onPublish?: (draft: BlogPostDraft) => Promise<void> | void;
 }
+
+type SyncStatus = "idle" | "saving" | "saved" | "error";
 
 function autoGrow(el: HTMLTextAreaElement | null) {
   if (!el) return;
@@ -25,17 +31,28 @@ function autoGrow(el: HTMLTextAreaElement | null) {
   el.style.height = `${el.scrollHeight}px`;
 }
 
+// How long to wait after the last edit before firing an autosave request.
+// Matches the "pause typing, it saves itself" feel of Google Docs without
+// sending a request on every single keystroke.
+const AUTOSAVE_DELAY_MS = 1200;
+
 export default function BlogEditor({
   initialDraft,
   authorName = "You",
-  onSaveDraft,
   onPublish,
 }: BlogEditorProps) {
   const navigate = useNavigate();
+  // Route is either /admin/blogs/new (fresh post) or /admin/blogs/:blogId
+  // (resuming an existing one — including right after this component
+  // swaps the URL itself post-first-save, and on a plain page refresh).
+  const { blogId } = useParams<{ blogId?: string }>();
+  const isExistingRoute = !!blogId && blogId !== "new";
+
   const [draft, setDraft] = useState<BlogPostDraft>(initialDraft ?? createEmptyDraft());
+  const [loadingPost, setLoadingPost] = useState(isExistingRoute && !initialDraft);
   const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [publishing, setPublishing] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -45,12 +62,64 @@ export default function BlogEditor({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const flowRef = useRef<ContentFlowHandle>(null);
 
+  // Backend id for this post once it exists there. Kept outside `draft`
+  // state since BlogPostDraft's shape (title/dek/etc.) mirrors what the
+  // editor writes, not backend bookkeeping. First save creates the row and
+  // returns an id; every save after that updates the same row. Seeded from
+  // the URL directly when opened as /admin/blogs/:blogId, so a fetch and a
+  // page refresh both land here without waiting on a network round trip.
+  const postIdRef = useRef<string | null>(
+    (initialDraft as unknown as { id?: string })?.id ?? (isExistingRoute ? blogId! : null),
+  );
+
+  // Guards for the debounced autosave effect below.
+  const skipFirstAutoSave = useRef(true);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Grow title/dek to fit whatever initialDraft brings in, and get rid of
   // the one-frame scrollbar you'd otherwise see before the first keystroke.
   useEffect(() => {
     autoGrow(titleRef.current);
     autoGrow(dekRef.current);
   }, []);
+
+  // Loads the post from the backend when opened by id — a direct link, or
+  // a refresh after the URL already swapped to /admin/blogs/:blogId.
+  useEffect(() => {
+    if (!isExistingRoute || initialDraft) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await getPostApi(blogId!);
+        const post = res.data.data;
+        if (cancelled) return;
+
+        postIdRef.current = post.id;
+        // Skip the very next autosave effect run — it'll fire from this
+        // setDraft call, and there's nothing new to save yet.
+        skipFirstAutoSave.current = true;
+        setDraft({
+          title: post.title,
+          dek: post.dek,
+          category: post.category,
+          heroImage: post.heroImage ?? null,
+          status: post.status === "PUBLISHED" ? "published" : "draft",
+          blocks: post.content as BlogPostDraft["blocks"],
+        });
+        setSyncStatus("saved");
+      } catch {
+        if (!cancelled) showToast("Couldn't load this article");
+      } finally {
+        if (!cancelled) setLoadingPost(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blogId]);
 
   function updateDraft(patch: Partial<BlogPostDraft>) {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -61,33 +130,83 @@ export default function BlogEditor({
     setTimeout(() => setToast(null), 2500);
   }
 
+  // Called every time a save/autosave/publish request comes back with an
+  // id. If this post didn't have one yet, this was the save that created
+  // it — swap the URL from /admin/blogs/new to /admin/blogs/:id so a
+  // refresh from here on reloads the real post instead of a blank editor.
+  // `replace: true` so this doesn't add a back-button stop.
+  function handleSavedId(id: string | undefined) {
+    if (!id) return;
+    const wasNew = !postIdRef.current;
+    postIdRef.current = id;
+    if (wasNew) {
+      navigate(`/admin/blogs/${id}`, { replace: true });
+    }
+  }
+
   async function handleCoverFile(file: File | undefined) {
     if (!file) return;
     setUploadingCover(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      updateDraft({ heroImage: dataUrl });
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await uploadImageApi(formData);
+      updateDraft({ heroImage: res.data.data.path });
+    } catch {
+      showToast("Cover image upload failed");
     } finally {
       setUploadingCover(false);
     }
   }
 
-  async function handleSaveDraft() {
-    if (!hasContent(draft)) {
-      showToast("Write something before you save this as a draft");
-      titleRef.current?.focus();
-      return;
-    }
-    setSavingDraft(true);
+  // Builds the same FormData shape for both autosave and publish, so the
+  // backend only needs to understand one payload format.
+  function buildDraftFormData(status: BlogPostDraft["status"]) {
+    const formData = new FormData();
+    formData.append("title", draft.title);
+    formData.append("dek", draft.dek);
+    formData.append("category", draft.category);
+    formData.append("status", status);
+    if (draft.heroImage) formData.append("heroImage", draft.heroImage);
+    formData.append("content", JSON.stringify(draft.blocks));
+    if (postIdRef.current) formData.append("id", postIdRef.current);
+    return formData;
+  }
+
+  // Fires automatically after a pause in typing. This is the only thing
+  // that persists a draft now — there's no manual "Save draft" button
+  // anymore, so `syncStatus` is the person's only signal that their work
+  // actually made it to the backend.
+  async function autoSaveDraft() {
+    if (!hasContent(draft) || publishing) return;
+    setSyncStatus("saving");
     try {
-      if (onSaveDraft) await onSaveDraft({ ...draft, status: "draft" });
-      else await new Promise((r) => setTimeout(r, 600)); // TODO: real API call
-      updateDraft({ status: "draft" });
-      showToast("Draft saved");
-    } finally {
-      setSavingDraft(false);
+      const formData = buildDraftFormData(draft.status);
+      const res = await saveDraftApi(formData);
+      handleSavedId(res?.data?.data?.id);
+      setSyncStatus("saved");
+    } catch {
+      setSyncStatus("error");
     }
   }
+
+  useEffect(() => {
+    // Skip the run that fires from the initial mount — there's nothing new
+    // to save yet. Also skipped right after loading a fetched post, above.
+    if (skipFirstAutoSave.current) {
+      skipFirstAutoSave.current = false;
+      return;
+    }
+    setSyncStatus("idle");
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveDraft();
+    }, AUTOSAVE_DELAY_MS);
+    return () => {
+      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
 
   async function handlePublish() {
     if (!hasContent(draft)) {
@@ -97,14 +216,59 @@ export default function BlogEditor({
     }
     setPublishing(true);
     try {
+      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
       const toSend = { ...draft, status: "published" as const };
       if (onPublish) await onPublish(toSend);
-      else await new Promise((r) => setTimeout(r, 600)); // TODO: real API call
+      else {
+        const formData = buildDraftFormData("published");
+        const res = await saveDraftApi(formData);
+        handleSavedId(res?.data?.data?.id);
+      }
       updateDraft({ status: "published" });
+      setSyncStatus("saved");
       showToast("Article published");
     } finally {
       setPublishing(false);
     }
+  }
+
+  if (loadingPost) {
+    return (
+      <div className="min-h-screen bg-white font-['Poppins',_sans-serif] overflow-x-hidden animate-pulse">
+        {/* Top bar skeleton — same slots as the real bar, so nothing jumps
+            around in height/position once the real content swaps in. */}
+        <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
+          <div className="mx-auto max-w-[760px] px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-100" />
+              <div className="w-20 h-6 rounded-full bg-gray-100" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-14 h-5 rounded-full bg-gray-100" />
+              <div className="w-8 h-8 rounded-full bg-gray-100" />
+              <div className="w-16 h-4 rounded bg-gray-100" />
+              <div className="w-20 h-7 rounded-full bg-gray-100" />
+            </div>
+          </div>
+        </div>
+
+        {/* Writing surface skeleton */}
+        <div className="mx-auto max-w-[760px] px-6 sm:px-10 py-6 sm:py-10">
+          <div className="w-full h-40 sm:h-56 rounded-lg bg-gray-100 mb-6 sm:mb-8" />
+          <div className="h-10 sm:h-12 w-11/12 rounded bg-gray-100 mb-3" />
+          <div className="h-10 sm:h-12 w-2/3 rounded bg-gray-100 mb-6" />
+          <div className="h-5 w-3/4 rounded bg-gray-100 mb-8" />
+
+          <div className="space-y-3">
+            <div className="h-4 w-full rounded bg-gray-100" />
+            <div className="h-4 w-full rounded bg-gray-100" />
+            <div className="h-4 w-5/6 rounded bg-gray-100" />
+            <div className="h-4 w-full rounded bg-gray-100" />
+            <div className="h-4 w-2/3 rounded bg-gray-100" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -122,7 +286,7 @@ export default function BlogEditor({
               aria-label="Back"
               className="p-1.5 sm:p-2 -ml-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-[#11512a] transition-colors cursor-pointer shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+              <MdArrowBack className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </button>
 
             <div className="relative">
@@ -132,7 +296,7 @@ export default function BlogEditor({
                 className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-colors cursor-pointer max-w-[32vw] sm:max-w-none truncate"
               >
                 <span className="truncate">{draft.category}</span>
-                <ChevronDown className="w-3 h-3 shrink-0" />
+                <MdKeyboardArrowDown className="w-3.5 h-3.5 shrink-0" />
               </button>
               {catMenuOpen && (
                 <div className="absolute z-10 left-0 mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-sm py-1">
@@ -154,10 +318,7 @@ export default function BlogEditor({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 order-3 sm:order-2 w-full sm:w-auto justify-end flex-wrap">
-            <span className="hidden sm:inline text-xs text-gray-500">
-              By <span className="font-medium text-gray-700">{authorName}</span>
-            </span>
+          <div className="flex items-center gap-5 order-3 sm:order-2 w-full sm:w-auto justify-end flex-wrap">
             <span
               className={`text-[10px] sm:text-xs font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${
                 draft.status === "published"
@@ -171,22 +332,44 @@ export default function BlogEditor({
               type="button"
               onClick={() => setPreviewOpen(true)}
               title="Preview"
-              className="p-1.5 sm:p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-500 px-1 cursor-pointer hover:text-gray-800 transition-colors"
             >
-              <Eye className="w-4 h-4" />
+              <MdVisibility className="w-4 h-4" />
+              View
             </button>
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={savingDraft || publishing}
-              className="text-[11px] sm:text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full transition-colors cursor-pointer disabled:opacity-60"
-            >
-              {savingDraft ? "Saving…" : "Save draft"}
-            </button>
+
+            {/* Sync indicator */}
+            <span className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-500 px-1">
+              {syncStatus === "saving" && (
+                <>
+                  <MdSync className="w-4 h-4 animate-spin text-amber-500" />
+                  Syncing…
+                </>
+              )}
+              {syncStatus === "saved" && (
+                <>
+                  <MdCloudSync className="w-4 h-4 text-[#11512a]" />
+                  Synced
+                </>
+              )}
+              {syncStatus === "error" && (
+                <>
+                  <MdOutlineSyncDisabled className="w-4 h-4 text-red-500" />
+                  Not synced
+                </>
+              )}
+              {syncStatus === "idle" && (
+                <>
+                  <MdCloudDone className="w-4 h-4 text-gray-400" />
+                  Updated
+                </>
+              )}
+            </span>
+
             <button
               type="button"
               onClick={handlePublish}
-              disabled={savingDraft || publishing}
+              disabled={publishing}
               style={{ backgroundColor: "#11512a" }}
               className="text-[11px] sm:text-xs font-semibold text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-70"
             >
@@ -208,14 +391,14 @@ export default function BlogEditor({
         />
         {draft.heroImage ? (
           <div className="relative group rounded-lg overflow-hidden mb-6 sm:mb-8 bg-gray-100">
-            <img src={draft.heroImage} alt="" className="w-full max-h-56 sm:max-h-80 object-cover" />
+            <img src={resolveMediaUrl(draft.heroImage)} alt="" className="w-full max-h-56 sm:max-h-80 object-cover" />
             <button
               type="button"
               onClick={() => updateDraft({ heroImage: null })}
               className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 rounded-full bg-black/60 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
               aria-label="Remove cover image"
             >
-              <X className="w-3.5 h-3.5" />
+              <MdClose className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : (
@@ -225,7 +408,7 @@ export default function BlogEditor({
             disabled={uploadingCover}
             className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#11512a] mb-6 sm:mb-8 transition-colors cursor-pointer disabled:opacity-60"
           >
-            <ImagePlus className="w-4 h-4" />
+            <MdAddPhotoAlternate className="w-4 h-4" />
             {uploadingCover ? "Uploading…" : "Add a cover image"}
           </button>
         )}
