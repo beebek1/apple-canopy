@@ -1,8 +1,6 @@
-import React from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import type { Location } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import { ProtectedRoute, PublicRoute } from "./guards/ProtectedRoute";
+import { Route, Routes } from "react-router-dom";
+import { ProtectedRoute } from "./guards/ProtectedRoute";
 import NotFoundPage from "../shared/components/NotFound";
 
 import Dashboard from "../modules/dashboard/DashboardPage";
@@ -11,60 +9,29 @@ import BlogPage from "../modules/blogs/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
 import AdminBlogList from "../modules/admin/pages/AdminBlogList";
 import BlogEditor from "../modules/admin/pages/BlogEditor";
-import VerifyEmail from "../modules/admin/pages/VerifyEmail";
-
-type JwtPayload = {
-  role?: string;
-  exp?: number;
-};
-
-const getRoleFromToken = (): string | null => {
-  const token = localStorage.getItem("jwtToken");
-  if (!token) return null;
-
-  try {
-    const decoded = jwtDecode<JwtPayload>(token);
-    if (!decoded?.exp || decoded.exp * 1000 <= Date.now()) return null;
-    return decoded.role ?? null;
-  } catch {
-    return null;
-  }
-};
-
-// Blocks specific roles from route tree
-const DenyRolesRoute: React.FC<{ deniedRoles: string[]; redirectTo: string }> = ({
-  deniedRoles,
-  redirectTo,
-}) => {
-  const role = getRoleFromToken();
-  if (role && deniedRoles.includes(role)) {
-    return <Navigate to={redirectTo} replace />;
-  }
-  return <Outlet />;
-};
 
 interface AppRoutesProps {
-  // When set (by App.tsx, using the stashed backgroundLocation while /auth
-  // is open), the page routes render against THIS location instead of the
-  // real one — so whatever page was open stays visible behind the modal.
   location?: Location;
 }
 
 const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
   return (
     <Routes location={location}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/blogs" element={<BlogList />} />
-        <Route path="/blogs/admin" element={<AdminBlogList />} />
-        <Route path="/blogs/1" element={<BlogPage />} />
-        <Route path="/blogs/admin/new" element={<BlogEditor />} />
-        <Route path="/orchards" element={<Orchards />} />
-        {/* Fallback background if /auth is visited directly (typed URL,
-            page refresh) with no backgroundLocation stashed — shows the
-            Dashboard behind the modal instead of a 404. */}
-        <Route path="/auth" element={<Dashboard />} />
-        <Route path="/verify-email" element={<Dashboard />} />
-        <Route path="*" element={<NotFoundPage />} />
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/blogs" element={<BlogList />} />
+      <Route path="/blogs/:title" element={<BlogPage />} />
+      <Route path="/orchards" element={<Orchards />} />
+
+      <Route path="/auth" element={<Dashboard />} />
+      <Route path="/verify-email" element={<Dashboard />} />
+
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/admin/blogs" element={<AdminBlogList />} />
+        <Route path="/admin/blogs/:id" element={<BlogEditor />} />
+      </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };
