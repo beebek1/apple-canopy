@@ -21,4 +21,26 @@ model admin {
   verificationTokenExpires DateTime? @db.Timestamptz(6)
   createdAt                DateTime? @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime? @updatedAt @db.Timestamptz(6)
+  Post                     Post[]
+}
+
+model Post {
+  id           String    @id @default(uuid())
+  authorId     Int
+  title        String
+  dek          String
+  category     String
+  heroImage    String?
+  status       PostStatus @default(DRAFT)
+  content      Json       // ContentBlock[] exactly as the editor produces it
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  publishedAt  DateTime?
+
+  author       admin     @relation(fields: [authorId], references: [user_id])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
 }
