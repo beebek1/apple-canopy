@@ -36,11 +36,30 @@ model Post {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   publishedAt  DateTime?
+  comments      Comment[]
 
   author       admin     @relation(fields: [authorId], references: [user_id])
 }
 
+
 enum PostStatus {
   DRAFT
   PUBLISHED
+}
+
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  visitorId String   
+  ip        String?  
+  authorName String?
+
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([visitorId, createdAt])
 }
