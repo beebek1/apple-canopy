@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { verifyAccessToken } from "../../middlewares/auth.middleware.js";
 import { validator } from "../../middlewares/validator.middleware.js";
-import { upload } from "../../middlewares/upload.middleware.js";
+import {
+  upload,
+  handleUploadError,
+} from "../../middlewares/upload.middleware.js";
 import { postSaveSchema, postStatusUpdateSchema } from "./post.validator.js";
 import {
   savePost,
@@ -23,6 +26,7 @@ router.post(
   "/autosave",
   verifyAccessToken,
   upload.none(),
+  handleUploadError,
   validator(postSaveSchema),
   savePost,
 );
