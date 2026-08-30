@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { FaShare as FaHeart} from "react-icons/fa";
+import { useState } from "react";
 
 interface Category {
   id: number;
@@ -72,20 +71,8 @@ function truncateWords(text: string, limit: number): string {
 
 export default function CategoriesSection() {
   const [hovered, setHovered] = useState<number | null>(null);
-  const [saved, setSaved] = useState<Set<number>>(new Set());
 
-  const toggleSaved = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSaved((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+
 
   return (
     <section className="relative min-h-[820px] w-full overflow-hidden bg-white">
@@ -129,7 +116,6 @@ export default function CategoriesSection() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
 
           {FEATURED.map((cat) => {
-            const isSaved = saved.has(cat.id);
             return (
               <div
                 key={cat.id}
