@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MdArrowBack, MdKeyboardArrowDown, MdVisibility, MdAddPhotoAlternate, MdClose, MdCloudSync, MdOutlineSyncDisabled, MdSync, MdCloudDone} from "react-icons/md";
+import { MdArrowBack, MdKeyboardArrowDown, MdVisibility, MdAddPhotoAlternate, MdClose, MdCloudSync, MdOutlineSyncDisabled, MdSync, MdCloudDone, MdUpload} from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { CATEGORIES, createEmptyDraft, hasContent } from "../components/types";
@@ -244,9 +244,6 @@ export default function BlogEditor({
               <div className="w-20 h-6 rounded-full bg-gray-100" />
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-14 h-5 rounded-full bg-gray-100" />
-              <div className="w-8 h-8 rounded-full bg-gray-100" />
-              <div className="w-16 h-4 rounded bg-gray-100" />
               <div className="w-20 h-7 rounded-full bg-gray-100" />
             </div>
           </div>
@@ -272,13 +269,13 @@ export default function BlogEditor({
   }
 
   return (
-    <div className="min-h-screen bg-white font-['Poppins',_sans-serif] overflow-x-hidden">
+    <div className="relative min-h-screen bg-white font-['Poppins',_sans-serif] overflow-x-clip">
       {/* Slim top bar — stays out of the way while writing.
           Wraps to a second row on narrow screens instead of overflowing. */}
+        
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="mx-auto max-w-[760px] px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-1.5 sm:gap-2 order-1">
-            {/* Back — returns to wherever the editor was opened from. */}
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -317,65 +314,84 @@ export default function BlogEditor({
               )}
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-5 order-3 sm:order-2 w-full sm:w-auto justify-end flex-wrap">
-            <span
-              className={`text-[10px] sm:text-xs font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${
-                draft.status === "published"
-                  ? "bg-[#e9f2ec] text-[#11512a]"
-                  : "bg-[#fdf3e7] text-[#a3690c]"
-              }`}
-            >
-              {draft.status === "published" ? "Published" : "Draft"}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPreviewOpen(true)}
-              title="Preview"
-              className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-500 px-1 cursor-pointer hover:text-gray-800 transition-colors"
-            >
-              <MdVisibility className="w-4 h-4" />
-              View
-            </button>
+      {/* Status rail — View / Draft-Published / Synced, as slim outlined
+          circles pinned to the vertical middle of the right edge. Each one
+          slides out a text label on hover instead of always showing text,
+          so the rail itself stays small and unobtrusive. `fixed` + centered
+          vertically (rather than bottom-anchored) so it always sits in the
+          middle of the viewport regardless of scroll position or page
+          length, and won't loiter down near a footer. */}
+      <div className="fixed top-1/2 -translate-y-1/2 right-3 sm:right-6 z-20 flex flex-col items-center gap-4">
+        {/* Publish — the one filled, colored circle in the rail so it reads
+            as the primary action, distinct from the outlined status icons
+            below it. */}
+        <div className="group relative flex items-center">
+          <button
+            type="button"
+            onClick={handlePublish}
+            disabled={publishing}
+            aria-label="Publish"
+            style={{ backgroundColor: "#11512a" }}
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white cursor-pointer shadow-md hover:opacity-90 hover:scale-105 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <MdUpload className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            {publishing ? "Publishing…" : "Publish"}
+          </span>
+        </div>
 
-            {/* Sync indicator */}
-            <span className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-500 px-1">
-              {syncStatus === "saving" && (
-                <>
-                  <MdSync className="w-4 h-4 animate-spin text-amber-500" />
-                  Syncing…
-                </>
-              )}
-              {syncStatus === "saved" && (
-                <>
-                  <MdCloudSync className="w-4 h-4 text-[#11512a]" />
-                  Synced
-                </>
-              )}
-              {syncStatus === "error" && (
-                <>
-                  <MdOutlineSyncDisabled className="w-4 h-4 text-red-500" />
-                  Not synced
-                </>
-              )}
-              {syncStatus === "idle" && (
-                <>
-                  <MdCloudDone className="w-4 h-4 text-gray-400" />
-                  Updated
-                </>
-              )}
-            </span>
+        {/* Draft / Published */}
+        <div className="group relative flex items-center">
+          <span
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center text-[9px] sm:text-[10px] font-bold cursor-default select-none transition-colors ${
+              draft.status === "published"
+                ? "border-[#11512a]/50 text-[#11512a]"
+                : "border-[#a3690c]/50 text-[#a3690c]"
+            }`}
+          >
+            {draft.status === "published" ? "PUB" : "DFT"}
+          </span>
+          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            {draft.status === "published" ? "Published" : "Draft"}
+          </span>
+        </div>
 
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={publishing}
-              style={{ backgroundColor: "#11512a" }}
-              className="text-[11px] sm:text-xs font-semibold text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-70"
-            >
-              {publishing ? "Publishing…" : "Publish"}
-            </button>
-          </div>
+        {/* View */}
+        <div className="group relative flex items-center">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            aria-label="Preview"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 cursor-pointer hover:border-[#11512a] hover:text-[#11512a] transition-colors shadow-sm"
+          >
+            <MdVisibility className="w-5 h-5" />
+          </button>
+          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            View
+          </span>
+        </div>
+
+        {/* Sync indicator */}
+        <div className="group relative flex items-center">
+          <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-gray-300 bg-white flex items-center justify-center shadow-sm cursor-default">
+            {syncStatus === "saving" && <MdSync className="w-5 h-5 animate-spin text-amber-500" />}
+            {syncStatus === "saved" && <MdCloudSync className="w-5 h-5 text-[#11512a]" />}
+            {syncStatus === "error" && <MdOutlineSyncDisabled className="w-5 h-5 text-red-500" />}
+            {syncStatus === "idle" && <MdCloudDone className="w-5 h-5 text-gray-400" />}
+          </span>
+          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            {syncStatus === "saving"
+              ? "Syncing…"
+              : syncStatus === "saved"
+              ? "Synced"
+              : syncStatus === "error"
+              ? "Not synced"
+              : "Updated"}
+          </span>
         </div>
       </div>
 
