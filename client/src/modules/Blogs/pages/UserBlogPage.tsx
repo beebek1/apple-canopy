@@ -153,7 +153,7 @@ export default function ArticlePage() {
         <div className="mx-auto max-w-[760px] px-6 pt-12 pb-24">
           <button
             onClick={() => navigate(-1)}
-            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#11512a]"
+            className="mb-8 inline-flex items-center gap-2 text-sm font-medium cursor-pointer text-gray-500 transition-colors hover:text-[#11512a]"
           >
             <FiArrowLeft className="h-4 w-4" />
             Back to Articles
