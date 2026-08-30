@@ -4,8 +4,8 @@ import { ProtectedRoute } from "./guards/ProtectedRoute";
 import NotFoundPage from "../shared/components/NotFound";
 
 import Dashboard from "../modules/dashboard/DashboardPage";
-import BlogList from "../modules/blogs/UserBlogList";
-import BlogPage from "../modules/blogs/UserBlogPage";
+import BlogList from "../modules/blogs/pages/UserBlogList";
+import BlogPage from "../modules/blogs/pages/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
 import AdminBlogList from "../modules/admin/pages/AdminBlogList";
 import BlogEditor from "../modules/admin/pages/BlogEditor";
@@ -19,7 +19,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
     <Routes location={location}>
       <Route path="/" element={<Dashboard />} />
       <Route path="/blogs" element={<BlogList />} />
-      <Route path="/blogs/:title" element={<BlogPage />} />
+      <Route path="/blogs/:id" element={<BlogPage />} />
       <Route path="/orchards" element={<Orchards />} />
 
       <Route path="/auth" element={<Dashboard />} />
@@ -28,7 +28,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/admin/blogs" element={<AdminBlogList />} />
-        <Route path="/admin/blogs/:id" element={<BlogEditor />} />
+        <Route path="/admin/blogs/:blogId" element={<BlogEditor />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
