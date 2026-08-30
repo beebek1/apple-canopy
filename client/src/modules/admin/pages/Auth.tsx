@@ -19,7 +19,7 @@ interface BackgroundLocationState {
   };
 }
 
-export default function Auth({ path = "/auth", onSubmit }: AuthProps) {
+export default function Auth({ path = "/auth" }: AuthProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -81,7 +81,7 @@ export default function Auth({ path = "/auth", onSubmit }: AuthProps) {
     try {
       const payload: LoginRequest = { username: data.username.trim(), password: data.password };
 
-      const response = await toast.promise(loginApi(payload), {
+      await toast.promise(loginApi(payload), {
         loading: "Checking credentials...",
         success: (res) => res.data?.message ?? "Login successful",
         error: (err) => err?.response?.data?.message || "Login failed",
