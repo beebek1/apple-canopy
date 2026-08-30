@@ -1,9 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import Logo from "../../assets/logo.png";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getCurrentUserApi } from "../../modules/admin/auth.api";
 
-const navLinks = [
+interface NavChild {
+  label: string;
+  href: string;
+}
+
+interface NavLink {
+  label: string;
+  href: string;
+  active?: boolean;
+  children?: NavChild[];
+}
+
+const navLinks: NavLink[] = [
   {
     label: "The Foundation",
     href: "/project",
@@ -25,6 +37,11 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const location = useLocation();
+
+  // Hide only for nested paths under /admin/blogs/ (e.g. /admin/blogs/123,
+  // /admin/blogs/new) — NOT for /admin/blogs itself.
+  const hideNavbar = /^\/admin\/blogs\/.+/.test(location.pathname);
 
   useEffect(() => {
     // Same session check ProtectedRoute uses — no shared hook, just the
@@ -56,6 +73,8 @@ export default function Navbar() {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(() => setOpenDropdown(null), 150);
   };
+
+  if (hideNavbar) return null;
 
   return (
     <>
