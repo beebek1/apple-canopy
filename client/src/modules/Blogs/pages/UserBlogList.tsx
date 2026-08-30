@@ -3,7 +3,6 @@ import { FiMessageCircle, FiShare2, FiArrowRight, FiFilter, FiCheck } from "reac
 import Sidebar from "../components/Sidebar";
 import { listPublicPostsApi } from "../blog.api"; // adjust path
 import type { PublicArticle } from "../blog.types"; // adjust path
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl"; // adjust path
 import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 5;
@@ -270,7 +269,7 @@ export default function ArticleFeed() {
                     <div className="w-full sm:w-40 h-40 sm:h-28 shrink-0 overflow-hidden rounded-md bg-gray-100">
                       {article.heroImage && (
                         <img
-                          src={resolveMediaUrl(article.heroImage)}
+                          src={article.heroImage}
                           alt=""
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />

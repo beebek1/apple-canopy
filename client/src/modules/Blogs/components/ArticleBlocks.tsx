@@ -1,6 +1,5 @@
 // blog/components/ArticleBlocks.tsx
 import RichText from "./RichText";
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
 import type { ContentBlock } from "../blog.types";
 
 export default function ArticleBlocks({ blocks }: { blocks: ContentBlock[] }) {
@@ -64,7 +63,7 @@ export default function ArticleBlocks({ blocks }: { blocks: ContentBlock[] }) {
               <figure key={block.id} className="mb-10">
                 <div className="w-full rounded-lg overflow-hidden bg-gray-100">
                   <img
-                    src={resolveMediaUrl(block.src)}
+                    src={block.src}
                     alt={block.caption ?? ""}
                     className="w-full h-auto object-cover"
                   />

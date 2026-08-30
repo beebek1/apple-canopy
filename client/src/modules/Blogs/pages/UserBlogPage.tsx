@@ -6,7 +6,6 @@ import CommentSection from "../components/CommentSection";
 import ArticleBlocks from "../components/ArticleBlocks";
 import { getPublicPostApi } from "../blog.api"; // adjust path
 import type { PublicArticleDetail } from "../blog.types"; // adjust path
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl"; // adjust path
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -191,7 +190,7 @@ export default function ArticlePage() {
           {article.heroImage && (
             <div className="w-full aspect-[16/9] rounded-lg overflow-hidden bg-gray-100 mb-10">
               <img
-                src={resolveMediaUrl(article.heroImage)}
+                src={article.heroImage}
                 alt=""
                 className="w-full h-full object-cover"
               />
