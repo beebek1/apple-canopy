@@ -9,7 +9,6 @@ import {
   deletePostApi,
 } from "../auth.api"; // adjust path to your api file
 import type { PostListItem } from "../auth.types";
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
 
 type ArticleStatus = "published" | "draft";
 type StatusTab = "all" | ArticleStatus;
@@ -401,7 +400,7 @@ export default function AdminArticleManager() {
                     <div className="hidden sm:block w-24 h-24 shrink-0 rounded-md overflow-hidden bg-gray-100">
                       {article.heroImage && (
                         <img
-                          src={resolveMediaUrl(article.heroImage)}
+                          src={article.heroImage}
                           alt=""
                           className="w-full h-full object-cover"
                         />

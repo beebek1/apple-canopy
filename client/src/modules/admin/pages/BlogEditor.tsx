@@ -7,7 +7,6 @@ import type { BlogPostDraft } from "../components/types";
 import ContentFlow from "../components/ContentFlow";
 import type { ContentFlowHandle } from "../components/ContentFlow";
 import ArticlePreview from "../components/ArticlePreview";
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
 import { uploadImageApi, saveDraftApi, getPostApi } from "../auth.api";
 
 interface BlogEditorProps {
@@ -407,7 +406,7 @@ export default function BlogEditor({
         />
         {draft.heroImage ? (
           <div className="relative group rounded-lg overflow-hidden mb-6 sm:mb-8 bg-gray-100">
-            <img src={resolveMediaUrl(draft.heroImage)} alt="" className="w-full max-h-56 sm:max-h-80 object-cover" />
+            <img src={draft.heroImage} alt="" className="w-full max-h-56 sm:max-h-80 object-cover" />
             <button
               type="button"
               onClick={() => updateDraft({ heroImage: null })}

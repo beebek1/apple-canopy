@@ -6,7 +6,6 @@ import type { BlockType, ContentBlock, ParagraphBlock } from "./types";
 import { uploadImageApi } from "../auth.api";
 import SelectionToolbar from "./SelectionToolbar";
 import { InlineText, htmlToMarkdown, markdownToHtml } from "./RichText";
-import { resolveMediaUrl } from "../../../shared/resolveMediaUrl";
 
 interface ContentFlowProps {
   blocks: ContentBlock[];
@@ -806,7 +805,7 @@ function ImageBlockEditor({
       />
       {block.src ? (
         <div className="relative rounded-lg overflow-hidden bg-gray-100">
-          <img src={resolveMediaUrl(block.src)} alt="" className="w-full max-h-64 sm:max-h-[420px] object-cover" />
+          <img src={block.src} alt="" className="w-full max-h-64 sm:max-h-[420px] object-cover" />
         </div>
       ) : (
         <button
@@ -887,7 +886,7 @@ export function ContentFlowReadOnly({ blocks }: { blocks: ContentBlock[] }) {
               return block.src ? (
                 <figure key={block.id}>
                   <div className="rounded-lg overflow-hidden bg-gray-100">
-                    <img src={resolveMediaUrl(block.src)} alt={block.caption} className="w-full object-cover" />
+                    <img src={block.src} alt={block.caption} className="w-full object-cover" />
                   </div>
                 {block.caption && (
                   <figcaption className="text-xs text-gray-400 mt-2 text-center">{block.caption}</figcaption>
