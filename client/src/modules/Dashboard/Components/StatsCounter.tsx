@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const stats = [
   { value: 10000, suffix: "", label: "Trees Targeted" },

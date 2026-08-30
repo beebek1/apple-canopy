@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import Environment from "../../assets/environment.png";
 import Placeholder1 from "../../assets/DisplayImg.png";
 import Placeholder2 from "../../assets/DisplayImg.png";
@@ -78,7 +78,7 @@ export default function Hero({ slides = dummySlides }: { slides?: Slide[] }) {
 
             {slides.length > 1 && (
                 <div className="flex items-center gap-2 mt-10 max-w-2xl">
-                {slides.map((slide, index) => (
+                {slides.map((_, index) => (
                     <button
                     key={index}
                     onClick={() => setActive(index)}

@@ -1,4 +1,3 @@
-import React from "react";
 import founderPhoto from "../../../assets/FounderImg.jpeg";
 import illustration from "../../../assets/HIll.jpeg";
 
