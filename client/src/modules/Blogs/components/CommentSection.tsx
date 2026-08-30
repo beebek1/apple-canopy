@@ -1,75 +1,137 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiX, FiSend, FiUser } from "react-icons/fi";
+import { createCommentApi, listCommentsApi } from "../blog.api"; // adjust path
 
 interface Comment {
   id: string;
-  author: string;
-  text: string;
-  date: string;
+  content: string;
+  createdAt: string;
+  authorName: string;
 }
 
 interface CommentSectionProps {
+  postId: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-// Dummy data. Backend will replace this with real comments for the article.
-const DUMMY_COMMENTS: Comment[] = [
-  {
-    id: "c1",
-    author: "Priya Sharma",
-    text: "MarineTraffic is such an underrated site. I lost an hour on it last week.",
-    date: "2h ago",
-  },
-  {
-    id: "c2",
-    author: "Daniel Cho",
-    text: "The Public Domain Review pick is correct. Their archive of old scientific illustrations is incredible.",
-    date: "5h ago",
-  },
-  {
-    id: "c3",
-    author: "Wren Alcott",
-    text: "Adding Fonts In Use to my bookmarks right now.",
-    date: "1d ago",
-  },
-];
+const AUTHOR_NAME_KEY = "blog_comment_author_name";
 
-export default function CommentSection({ isOpen, onClose }: CommentSectionProps) {
-  const [comments, setComments] = useState<Comment[]>(DUMMY_COMMENTS);
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function CommentSection({ postId, isOpen, onClose }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState("");
-  const [username, setUsername] = useState<string | null>(null);
-  const [askingName, setAskingName] = useState(false);
-  const [nameInput, setNameInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  function postComment(author: string) {
+  // Who "you" are, remembered locally so a returning visitor is recognized
+  // without having to type their name again.
+  const [authorName, setAuthorName] = useState<string | null>(null);
+  const [showNameGate, setShowNameGate] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Load the remembered name once on mount.
+  useEffect(() => {
+    const stored = localStorage.getItem(AUTHOR_NAME_KEY);
+    if (stored) setAuthorName(stored);
+  }, []);
+
+  useEffect(() => {
+    if (showNameGate) nameInputRef.current?.focus();
+  }, [showNameGate]);
+
+  // Fetch once, the first time the panel is opened — no need to refetch
+  // every toggle.
+  useEffect(() => {
+    if (!isOpen || loaded) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await listCommentsApi(postId);
+        if (!cancelled) {
+          setComments(res.data.data);
+          setLoaded(true);
+        }
+      } catch {
+        if (!cancelled) setError("Couldn't load comments.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, loaded, postId]);
+
+  async function postComment(name: string) {
     const text = draft.trim();
-    if (!text) return;
-    // Backend will handle real submission and return the saved comment.
-    setComments((prev) => [
-      { id: `local-${Date.now()}`, author, text, date: "Just now" },
-      ...prev,
-    ]);
-    setDraft("");
-  }
+    if (!text || posting) return;
 
-  function handleSubmit() {
-    if (!draft.trim()) return;
-    if (username) {
-      postComment(username);
-    } else {
-      setNameInput("");
-      setAskingName(true);
+    setPosting(true);
+    setError(null);
+    try {
+      const res = await createCommentApi(postId, text, name);
+      const saved = res.data.data;
+      setComments((prev) => [
+        { id: saved.id, content: saved.content, createdAt: saved.createdAt, authorName: name },
+        ...prev,
+      ]);
+      setDraft("");
+    } catch (err: any) {
+      if (err?.response?.status === 429) {
+        setError(err.response.data?.message ?? "You're commenting too quickly. Try again in a minute.");
+      } else {
+        setError("Couldn't post your comment. Try again.");
+      }
+    } finally {
+      setPosting(false);
     }
   }
 
+  function handleSubmit() {
+    if (!draft.trim() || posting) return;
+    // First time commenting on this device — ask who they are before sending.
+    if (!authorName) {
+      setShowNameGate(true);
+      return;
+    }
+    postComment(authorName);
+  }
+
   function handleConfirmName() {
-    const trimmed = nameInput.trim();
-    // Backend will assign a real guest identity. For now, fall back to a random guest tag.
-    const finalName = trimmed || `Guest${Math.floor(1000 + Math.random() * 9000)}`;
-    setUsername(finalName);
-    setAskingName(false);
-    postComment(finalName);
+    const name = nameDraft.trim();
+    if (!name) {
+      setNameError("Enter a name so people know who's talking.");
+      return;
+    }
+    if (name.length > 40) {
+      setNameError("Keep it under 40 characters.");
+      return;
+    }
+    // Permanent for this device — there's no edit affordance once this is set.
+    localStorage.setItem(AUTHOR_NAME_KEY, name);
+    setAuthorName(name);
+    setShowNameGate(false);
+    setNameDraft("");
+    setNameError(null);
+    postComment(name);
   }
 
   return (
@@ -98,52 +160,85 @@ export default function CommentSection({ isOpen, onClose }: CommentSectionProps)
 
         {/* Comment list */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 min-h-0">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3">
-              <span className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
-                <FiUser className="w-4 h-4" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {comment.author}
-                  </p>
-                  <span className="text-xs text-gray-400">{comment.date}</span>
+          {loading && (
+            <div className="space-y-6 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="w-9 h-9 rounded-full bg-gray-100 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-24 bg-gray-100 rounded" />
+                    <div className="h-3.5 w-full bg-gray-100 rounded" />
+                    <div className="h-3.5 w-2/3 bg-gray-100 rounded" />
+                  </div>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed mt-1">
-                  {comment.text}
-                </p>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {!loading && comments.length === 0 && !error && (
+            <p className="text-sm text-gray-400 text-center py-8">
+              No comments yet. Be the first to say something.
+            </p>
+          )}
+
+          {!loading &&
+            comments.map((comment) => (
+              <div key={comment.id} className="flex gap-3">
+                <span className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                  <FiUser className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {comment.authorName}
+                    </p>
+                    <span className="text-xs text-gray-400">{timeAgo(comment.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed mt-1">
+                    {comment.content}
+                  </p>
+                </div>
+              </div>
+            ))}
         </div>
 
         {/* New comment input */}
         <div className="border-t border-gray-200 p-4 shrink-0 rounded-b-none md:rounded-b-2xl relative">
-          {username && (
-            <p className="text-xs text-gray-400 mb-2">
-              Posting as <span className="font-semibold text-gray-600">{username}</span>
-            </p>
-          )}
-          {askingName && (
+          {/* Name gate — floats above the input the first time someone tries to
+              comment on this device, without displacing the comment list */}
+          {showNameGate && (
             <div className="absolute bottom-full left-4 right-4 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-10">
-              <p className="text-sm font-semibold text-gray-900 mb-1">Add a name</p>
+              <p className="text-sm font-semibold text-gray-900 mb-1">What's your name?</p>
               <p className="text-xs text-gray-400 mb-3">
-                Pick a name to post with. Leave it blank for a guest name.
+                This is shown next to your comments — it can't be changed later.
               </p>
               <input
+                ref={nameInputRef}
                 type="text"
-                autoFocus
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleConfirmName()}
+                value={nameDraft}
+                onChange={(e) => {
+                  setNameDraft(e.target.value);
+                  if (nameError) setNameError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleConfirmName();
+                  }
+                }}
                 placeholder="Your name"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-[#11512a] transition-colors"
+                maxLength={40}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-1 focus:outline-none focus:border-[#11512a] transition-colors"
               />
-              <div className="flex justify-end gap-2">
+              {nameError && <p className="text-xs text-[#680505] mb-2">{nameError}</p>}
+              <div className="flex justify-end gap-2 mt-2">
                 <button
                   type="button"
-                  onClick={() => setAskingName(false)}
+                  onClick={() => {
+                    setShowNameGate(false);
+                    setNameDraft("");
+                    setNameError(null);
+                  }}
                   className="text-xs font-medium text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   Cancel
@@ -158,6 +253,19 @@ export default function CommentSection({ isOpen, onClose }: CommentSectionProps)
               </div>
             </div>
           )}
+
+          {error && (
+            <p className="text-xs text-[#680505] bg-red-50 rounded-lg px-3 py-2 mb-2">
+              {error}
+            </p>
+          )}
+
+          {authorName && (
+            <p className="text-xs text-gray-400 mb-2">
+              Commenting as <span className="font-semibold text-gray-600">{authorName}</span>
+            </p>
+          )}
+
           <div className="flex items-end gap-2">
             <textarea
               value={draft}
@@ -170,12 +278,14 @@ export default function CommentSection({ isOpen, onClose }: CommentSectionProps)
               }}
               placeholder="Add a comment"
               rows={2}
-              className="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#11512a] transition-colors"
+              disabled={posting}
+              className="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#11512a] transition-colors disabled:opacity-60"
             />
             <button
               type="button"
               onClick={handleSubmit}
-              className="w-9 h-9 rounded-full bg-[#11512a] text-white flex items-center justify-center hover:bg-[#0d3f20] transition-colors cursor-pointer shrink-0"
+              disabled={posting || !draft.trim()}
+              className="w-9 h-9 rounded-full bg-[#11512a] text-white flex items-center justify-center hover:bg-[#0d3f20] transition-colors cursor-pointer shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <FiSend className="w-4 h-4" />
             </button>
