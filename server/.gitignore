@@ -6,3 +6,4 @@ node_modules
 
 # Runtime uploaded media
 uploads
+.DS_Store
