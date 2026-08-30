@@ -13,7 +13,6 @@ export const validator =
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        // Map the errors to get a clean string: "title: required, genre: too short"
         const errorMessages = error.issues
           .map((err) => {
             const field = String(err.path[1] || err.path[0]);
@@ -23,7 +22,7 @@ export const validator =
 
         return res.status(400).json({
           success: false,
-          message: errorMessages, // Now the specific errors are in the message string
+          message: errorMessages, 
           errors: error.issues.map((err) => ({
             path: err.path[1] || err.path[0],
             message: err.message,
