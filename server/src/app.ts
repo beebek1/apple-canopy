@@ -1,28 +1,23 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 
+import "./config/cloudinary.config.js";
 import rootRouter from "./modules/main.router.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
-// Uploads stuff
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_LINK,
     credentials: true,
   }),
 );
+
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(cookieParser());
 
 // Routes
