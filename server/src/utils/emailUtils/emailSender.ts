@@ -75,6 +75,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 const sendEmail = async ({ to, subject, html }: EmailOptions) => {
@@ -96,11 +99,53 @@ export const emailSender = async (
   subject: string,
   html: string,
 ) => {
+  console.log("========== EMAIL SENDER ==========");
+  console.log("Email:", email);
+  console.log("Subject:", subject);
+  console.log("HTML provided:", Boolean(html));
+  console.log("HTML length:", html?.length ?? 0);
+
   if (!email || !subject || !html) {
-    throw new ApiError(400, "Email, subject and html content are required");
+    console.error("Email validation failed:", {
+      hasEmail: Boolean(email),
+      hasSubject: Boolean(subject),
+      hasHtml: Boolean(html),
+    });
+
+    throw new ApiError(
+      400,
+      "Email, subject and html content are required",
+    );
   }
 
-  await sendEmail({ to: email, subject, html });
+  try {
+    console.log("Calling sendEmail...");
+
+    const result = await sendEmail({
+      to: email,
+      subject,
+      html,
+    });
+
+    console.log("Email sent successfully.");
+    console.log("SendEmail result:", result);
+    console.log("=================================");
+
+    return result;
+  } catch (error: any) {
+    console.error("========== EMAIL SENDING ERROR ==========");
+    console.error("Message:", error?.message);
+    console.error("Code:", error?.code);
+    console.error("Command:", error?.command);
+    console.error("Response:", error?.response);
+    console.error("Response Code:", error?.responseCode);
+    console.error("Error:", error);
+    console.error("Stack:", error?.stack);
+    console.error("==========================================");
+
+    throw error;
+  }
 };
+
 
 export default emailSender;
