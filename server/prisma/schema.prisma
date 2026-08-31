@@ -22,6 +22,7 @@ model admin {
   createdAt                DateTime? @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime? @updatedAt @db.Timestamptz(6)
   Post                     Post[]
+  Status                   Status[]
 }
 
 model Post {
@@ -39,6 +40,20 @@ model Post {
   comments      Comment[]
 
   author       admin     @relation(fields: [authorId], references: [user_id])
+}
+
+model Status {
+  id        String   @id @default(uuid())
+  slot      Int      @unique
+  category  String   
+  heading   String   
+  body      String   
+  bodyType  String   @default("paragraph")
+  image     String   
+  authorId  Int
+  author    admin     @relation(fields: [authorId], references: [user_id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 
