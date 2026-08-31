@@ -53,7 +53,6 @@
 // export default emailSender;
 
 
-
 import nodemailer from "nodemailer";
 import { ApiError } from "../apiError.js";
 
@@ -70,7 +69,10 @@ console.log(
 );
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  family: 4, // force IPv4 — avoids ENETUNREACH on hosts without IPv6 egress
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -78,16 +80,27 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any);
+
+transporter.verify((error: unknown) => {
+  if (error) {
+    console.error("SMTP VERIFY FAILED:", error);
+  } else {
+    console.log("SMTP VERIFY SUCCESS: server is ready to send");
+  }
 });
 
 const sendEmail = async ({ to, subject, html }: EmailOptions) => {
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Apple Canopy" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
     });
+    console.log("Email sent, messageId:", info.messageId);
+    return info;
   } catch (error: unknown) {
     console.error("EMAIL ERROR:", error);
     throw new ApiError(500, "Failed to send email");
@@ -99,53 +112,11 @@ export const emailSender = async (
   subject: string,
   html: string,
 ) => {
-  console.log("========== EMAIL SENDER ==========");
-  console.log("Email:", email);
-  console.log("Subject:", subject);
-  console.log("HTML provided:", Boolean(html));
-  console.log("HTML length:", html?.length ?? 0);
-
   if (!email || !subject || !html) {
-    console.error("Email validation failed:", {
-      hasEmail: Boolean(email),
-      hasSubject: Boolean(subject),
-      hasHtml: Boolean(html),
-    });
-
-    throw new ApiError(
-      400,
-      "Email, subject and html content are required",
-    );
+    throw new ApiError(400, "Email, subject and html content are required");
   }
 
-  try {
-    console.log("Calling sendEmail...");
-
-    const result = await sendEmail({
-      to: email,
-      subject,
-      html,
-    });
-
-    console.log("Email sent successfully.");
-    console.log("SendEmail result:", result);
-    console.log("=================================");
-
-    return result;
-  } catch (error: any) {
-    console.error("========== EMAIL SENDING ERROR ==========");
-    console.error("Message:", error?.message);
-    console.error("Code:", error?.code);
-    console.error("Command:", error?.command);
-    console.error("Response:", error?.response);
-    console.error("Response Code:", error?.responseCode);
-    console.error("Error:", error);
-    console.error("Stack:", error?.stack);
-    console.error("==========================================");
-
-    throw error;
-  }
+  await sendEmail({ to: email, subject, html });
 };
-
 
 export default emailSender;
