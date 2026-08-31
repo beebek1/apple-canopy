@@ -53,7 +53,7 @@
 // export default emailSender;
 
 
-import nodemailer from "nodemailer";
+import axios from "axios";
 import { ApiError } from "../apiError.js";
 
 interface EmailOptions {
@@ -62,48 +62,44 @@ interface EmailOptions {
   html: string;
 }
 
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const FROM_EMAIL = process.env.BREVO_FROM_EMAIL as string; // your verified single sender email
+const FROM_NAME = "Apple Canopy";
+
 console.log(
-  process.env.EMAIL_USER && process.env.EMAIL_PASS
-    ? "GMAIL CREDENTIALS EXIST"
-    : "GMAIL CREDENTIALS MISSING",
+  process.env.BREVO_API_KEY ? "BREVO API KEY EXISTS" : "BREVO API KEY MISSING",
 );
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  family: 4, // force IPv4 — avoids ENETUNREACH on hosts without IPv6 egress
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any);
-
-transporter.verify((error: unknown) => {
-  if (error) {
-    console.error("SMTP VERIFY FAILED:", error);
-  } else {
-    console.log("SMTP VERIFY SUCCESS: server is ready to send");
-  }
-});
 
 const sendEmail = async ({ to, subject, html }: EmailOptions) => {
   try {
-    const info = await transporter.sendMail({
-      from: `"Apple Canopy" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log("Email sent, messageId:", info.messageId);
-    return info;
-  } catch (error: unknown) {
-    console.error("EMAIL ERROR:", error);
-    throw new ApiError(500, "Failed to send email");
+    const response = await axios.post(
+      BREVO_API_URL,
+      {
+        sender: {
+          name: FROM_NAME,
+          email: FROM_EMAIL,
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      },
+    );
+
+    console.log("Email sent, messageId:", response.data?.messageId);
+    return response.data;
+  } catch (error: any) {
+    console.error("EMAIL ERROR:", error?.response?.data || error.message);
+    throw new ApiError(
+      500,
+      error?.response?.data?.message || "Failed to send email",
+    );
   }
 };
 
