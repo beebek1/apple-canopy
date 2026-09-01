@@ -76,6 +76,9 @@ export default function Navbar() {
 
   if (hideNavbar) return null;
 
+  const actionButtonClass =
+    "bg-[#11512a] text-white px-7 py-3 text-[14px] font-medium uppercase tracking-wider rounded hover:bg-[#0d3f20] transition-colors duration-300";
+
   return (
     <>
       <nav
@@ -196,15 +199,36 @@ export default function Navbar() {
               );
             })}
 
-            <button className="bg-[#11512a] text-white px-7 py-3 text-[14px] font-medium uppercase tracking-wider rounded hover:bg-[#0d3f20] transition-colors duration-300 mt-3 md:hidden">
-              Donate
-            </button>
+            {isAdmin ? (
+              <Link
+                to="/admin/sessions"
+                onClick={() => setMenuOpen(false)}
+                className={`${actionButtonClass} mt-3 md:hidden`}
+              >
+                Sessions
+              </Link>
+            ) : (
+              <button className={`${actionButtonClass} mt-3 md:hidden`}>
+                Donate
+              </button>
+            )}
           </div>
         </div>
 
-        <button className="hidden md:inline-block cursor-pointer bg-[#11512a] text-white px-7 py-3 text-[14px] font-medium uppercase tracking-wider rounded hover:bg-[#0d3f20] transition-colors duration-300 shrink-0">
-          Donate
-        </button>
+        {isAdmin ? (
+          <Link
+            to="/admin/sessions"
+            className={`hidden md:inline-block cursor-pointer shrink-0 ${actionButtonClass}`}
+          >
+            Sessions
+          </Link>
+        ) : (
+          <button
+            className={`hidden md:inline-block cursor-pointer shrink-0 ${actionButtonClass}`}
+          >
+            Donate
+          </button>
+        )}
 
         <button
           onClick={() => setMenuOpen(!menuOpen)}
