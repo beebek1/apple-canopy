@@ -51,10 +51,12 @@ export default function Auth({ path = "/auth" }: AuthProps) {
         },
         { replace: true }
       );
-    } else if (window.history.length > 1) {
-      // No stashed background (e.g. direct link/refresh on /auth) — just go back.
-      navigate(-1);
     } else {
+      // No stashed background — /auth was opened directly (typed URL,
+      // refresh, fresh tab), not as a modal over another page.
+      // history.length isn't reliable here: it can include entries from
+      // before the app ever loaded, so navigate(-1) can exit the app
+      // instead of moving inside it. Root is always safe.
       navigate("/", { replace: true });
     }
   }
@@ -64,9 +66,6 @@ export default function Auth({ path = "/auth" }: AuthProps) {
       loading: "Securing...",
       success: (res) => res.data?.message ?? "Kindly verify yourself through the email sent",
       error: (res) => res.response.data?.message || "Email couldn't be sent"
-      // loading: "Your credentials will be in your inbox soon",
-      // success: (res) => res.data?.message ?? "Your credentials are in your inbox. Kindly check your email",
-      // error: (res) => res.response.data?.message || "Credentials can't be sent"
     })
   }
 
