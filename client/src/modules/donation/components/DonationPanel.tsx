@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { getDonationsApi } from "../donation.api";
-import type { Donation } from "../doantion.types";
+import type { Donation } from "../donation.types";
 
 function formatAmount(amountInCents: number, currency: string) {
   return new Intl.NumberFormat("en-US", {

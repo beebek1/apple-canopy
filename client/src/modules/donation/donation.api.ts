@@ -1,5 +1,5 @@
 import apiClient from "../../shared/apiClient";
-import type { CreateCheckoutSessionInput, Donation } from "./doantion.types";
+import type { CreateCheckoutSessionInput, Donation } from "./donation.types";
 
 export const createCheckoutSessionApi = async (
   data: CreateCheckoutSessionInput,

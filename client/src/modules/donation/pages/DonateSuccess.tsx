@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getSessionApi } from "../donation.api";
-import type { Donation } from "../doantion.types";
+import type { Donation } from "../donation.types";
 
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLLS = 6; // ~15s before we stop polling and just say "check your email"
