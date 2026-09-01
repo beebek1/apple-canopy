@@ -5,6 +5,7 @@ import type { AuthRequest } from "../auth.middleware.js";
 type AccessTokenPayload = {
   id: number;
   username: string;
+  sessionId: string;
   iat?: number;
   exp?: number;
 };
@@ -15,6 +16,7 @@ export function optionalAuth(
   next: NextFunction,
 ) {
   const token = req.cookies?.accessToken;
+
   if (!token) return next();
 
   try {
@@ -22,11 +24,16 @@ export function optionalAuth(
       token,
       process.env.JWT_SECRET!,
     ) as AccessTokenPayload;
-    if (decoded?.id && decoded?.username) {
-      req.user = { id: decoded.id, username: decoded.username };
+
+    if (decoded?.id && decoded?.username && decoded?.sessionId) {
+      req.user = {
+        id: decoded.id,
+        username: decoded.username,
+        sessionId: decoded.sessionId,
+      };
     }
   } catch {
-    // expired/invalid token — treat as anonymous rather than blocking
   }
+
   next();
 }
