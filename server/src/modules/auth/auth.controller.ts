@@ -5,6 +5,8 @@ import { StatusCodes } from "http-status-codes";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 import { ApiError } from "../../utils/apiError.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const registerUser = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const verificationToken = req.query.token;
@@ -24,12 +26,12 @@ export const registerUser = asyncHandler(
 
 export const loginUser = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const token = await userService.login(req.body);
+    const token = await userService.login(req.body, req);
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -56,7 +58,7 @@ export const getCurrentUser = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     return res.status(StatusCodes.OK).json({
       success: true,
-      message: "Authenticated"
+      message: "Authenticated",
     });
   },
 );
