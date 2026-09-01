@@ -1,5 +1,4 @@
 import { Router } from "express";
-import express from "express";
 import { validator } from "../../middlewares/validator.middleware.js";
 import { createCheckoutSessionSchema } from "./payment.validator.js";
 import { createCheckoutSession, getDonations, getSession, handleWebhook } from "./payment.controller.js";

@@ -21,7 +21,6 @@ export const createCheckoutSession = asyncHandler(
 
 export const handleWebhook = asyncHandler(
   async (req: Request, res: Response) => {
-    console.log("🔥 WEBHOOK RECEIVED");
     const signature = req.headers["stripe-signature"];
 
     if (typeof signature !== "string") {
@@ -51,7 +50,7 @@ export const handleWebhook = asyncHandler(
         );
         break;
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        break;
     }
 
     return res.status(StatusCodes.OK).json({ received: true });

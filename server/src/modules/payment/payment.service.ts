@@ -71,21 +71,13 @@ export const constructWebhookEvent = (payload: Buffer, signature: string) => {
 export const handleCheckoutCompleted = async (
   session: Stripe.Checkout.Session,
 ) => {
-  console.log("CHECKOUT COMPLETED:", session.id);
-  console.log("METADATA:", session.metadata);
-  console.log("PAYMENT INTENT:", session.payment_intent);
-
   const donationId = session.metadata?.donationId;
 
   if (!donationId) {
-    console.error(
-      "checkout.session.completed with no donationId metadata:",
-      session.id,
-    );
     return;
   }
 
-  const donation = await db.donation.update({
+  await db.donation.update({
     where: { id: donationId },
     data: {
       status: "COMPLETED",
@@ -96,8 +88,6 @@ export const handleCheckoutCompleted = async (
       paidAt: new Date(),
     },
   });
-
-  console.log("DONATION UPDATED:", donation);
 };
 
 export const getDonationBySessionId = async (sessionId: string) => {
