@@ -10,6 +10,7 @@ import BlogPage from "../modules/blogs/pages/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
 import AdminBlogList from "../modules/admin/pages/AdminBlogList";
 import DonationSuccess from "../modules/donation/pages/DonateSuccess";
+import DonationCancel from "../modules/donation/pages/DonateCancel";
 import SettingPanel from "../modules/donation/pages/SettingPanel";
 import BlogEditor from "../modules/admin/pages/BlogEditor";
 
@@ -25,6 +26,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
       <Route path="/blogs/:id" element={<BlogPage />} />
       <Route path="/orchards" element={<Orchards />} />
       <Route path="/donate/success" element={<DonationSuccess />} />
+      <Route path="/donate/cancel" element={<DonationCancel />} />
 
       <Route path="/auth" element={<Dashboard />} />
       <Route path="/verify-email" element={<Dashboard />} />
