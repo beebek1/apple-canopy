@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { StatusCodes } from "http-status-codes";
 import jwt, { type SignOptions } from "jsonwebtoken";
+import type { Request } from "express";
 
 import db from "../../config/db.js";
 import { ApiError } from "../../utils/apiError.js";
@@ -10,7 +11,7 @@ import emailSender from "../../utils/emailUtils/emailSender.js";
 import generateCredentials from "../../utils/credentialsGenerator.js";
 import registrationEmailTemplate from "../../utils/emailUtils/emailCredentials.js";
 import verifyEmailTemplate from "../../utils/emailUtils/emailVerify.js";
-
+import * as sessionService from "../session/session.service.js";
 
 //============================================================REGISTER========================================================================
 
@@ -75,10 +76,9 @@ export const register = async (token: string) => {
   return result;
 };
 
-
 //============================================================LOGIN========================================================================
 
-export const login = async (data: LoginInput) => {
+export const login = async (data: LoginInput, req: Request) => {
   const user = await db.admin.findUnique({
     where: { username: data.username },
   });
@@ -99,7 +99,13 @@ export const login = async (data: LoginInput) => {
     );
   }
 
-  const payload = { id: user.user_id, username: user.username };
+  const session = await sessionService.createSession(user.user_id, req);
+
+  const payload = {
+    id: user.user_id,
+    username: user.username,
+    sessionId: session.id,
+  };
   const options: SignOptions = {
     expiresIn: (process.env.JWT_EXPIRES_IN as string) || ("7d" as any),
   };
@@ -107,7 +113,6 @@ export const login = async (data: LoginInput) => {
 
   return token;
 };
-
 
 //============================================================VERIFY========================================================================
 
