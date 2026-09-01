@@ -9,6 +9,18 @@ export type LoginRequest = {
   password: string;
 };
 
+export interface Session {
+  id: string;
+  userAgent: string | null;
+  ip: string | null;
+  createdAt: string;
+  expiresAt: string;
+  isCurrent: boolean;
+}
+
+export interface SessionListResponse extends ApiResponse<Session[]> {}
+ 
+
 export type PostRequest = {
   id: string;
   title: string;
