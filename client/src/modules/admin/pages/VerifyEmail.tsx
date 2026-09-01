@@ -41,7 +41,6 @@ export default function VerifyEmail({ path = "/verify-email" }: VerifyEmailProps
   async function handleVerify() {
 
     setSubmitting(true);
-    //extracting the token from the url
     const token = searchParams.get("token");
     if(!token){
       toast.error("Its bug free. Don’t waste time testing your luck.")
@@ -51,7 +50,10 @@ export default function VerifyEmail({ path = "/verify-email" }: VerifyEmailProps
     try {
       await toast.promise(resetPasswordApi(token!), {
         loading: "Verifying your email...",
-        success: (res) => res.data?.message ?? "Email verified successfully",
+        success: (res) => { 
+          navigate("/auth");
+          return res.data?.message ?? "Email verified successfully";
+        },
         error: (err) => err?.response?.data?.message || "Verification failed",
       });
 
