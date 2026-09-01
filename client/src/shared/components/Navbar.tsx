@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Logo from "../../assets/logo.png";
 import { Link, useLocation } from "react-router-dom";
 import { getCurrentUserApi } from "../../modules/admin/auth.api";
+import DonateModal from "../../modules/donation/components/DonationModal";
 
 interface NavChild {
   label: string;
@@ -34,6 +35,7 @@ const navLinks: NavLink[] = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -208,7 +210,12 @@ export default function Navbar() {
                 Sessions
               </Link>
             ) : (
-              <button className={`${actionButtonClass} mt-3 md:hidden`}>
+              <button 
+                onClick={()=> {
+                  setDonateOpen(true);
+                  setMenuOpen(false);
+                }}
+                className={`${actionButtonClass} mt-3 md:hidden`}>
                 Donate
               </button>
             )}
@@ -224,6 +231,7 @@ export default function Navbar() {
           </Link>
         ) : (
           <button
+            onClick={() => setDonateOpen(true)}
             className={`hidden md:inline-block cursor-pointer shrink-0 ${actionButtonClass}`}
           >
             Donate
@@ -255,6 +263,7 @@ export default function Navbar() {
       </nav>
 
       <div className="h-[95px] w-full" />
+      <DonateModal open={donateOpen} onClose={() => setDonateOpen(false)} />
     </>
   );
 }
