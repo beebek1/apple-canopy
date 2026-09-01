@@ -23,6 +23,7 @@ model admin {
   updatedAt                DateTime? @updatedAt @db.Timestamptz(6)
   Post                     Post[]
   Status                   Status[]
+  Session                  Session[]
 }
 
 model Post {
@@ -77,4 +78,17 @@ model Comment {
 
   @@index([postId])
   @@index([visitorId, createdAt])
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  adminId   Int
+  admin     admin     @relation(fields: [adminId], references: [user_id], onDelete: Cascade)
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([adminId])
 }
