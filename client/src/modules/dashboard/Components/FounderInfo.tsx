@@ -17,13 +17,13 @@ export default function FounderSection() {
           </div>
           <div className="mt-6 ml-2">
             <h3 className="text-[1.4rem] font-bold text-[#11512a]">
-              Ramesh Sharma
+              Nyima Tashi gurung
             </h3>
             <p className="mt-1 text-[0.85rem] font-semibold uppercase tracking-wide text-[#990200]">
               Founder &amp; Editor in Chief
             </p>
             <p className="mt-3 max-w-[420px] text-[0.9rem] leading-[1.6] text-[#4a3d3d]">
-              Ramesh started this platform to give writers a place to publish
+              Nyima started this platform to give writers a place to publish
               honest work without the noise. He still edits every long form
               piece before it goes live.
             </p>
