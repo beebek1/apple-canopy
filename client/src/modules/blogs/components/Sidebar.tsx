@@ -1,14 +1,7 @@
 import { FiSearch, FiChevronDown, FiX } from "react-icons/fi";
 import { BsSortDown, BsSortUpAlt } from "react-icons/bs";
+import { CATEGORIES } from "../../../shared/categories";
 
-export const CATEGORIES = [
-  "All Category",
-  "Plantation",
-  "Forests",
-  "Wildlife",
-  "Climate",
-  "Community",
-];
 
 interface SidebarProps {
   query: string;

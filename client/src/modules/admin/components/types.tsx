@@ -1,10 +1,6 @@
-// ---------- Shared types for the Blog Editor ----------
-// Nothing in this file depends on React — safe to import from any layer.
-
 export type ArticleStatus = "draft" | "published";
-
 export type BlockType = "paragraph" | "heading" | "listicle" | "pullquote" | "image";
-
+import { CATEGORIES } from "../../../shared/categories";
 export interface ParagraphBlock {
   id: string;
   type: "paragraph";
@@ -59,14 +55,6 @@ export interface BlogPostDraft {
   blocks: ContentBlock[];
   status: ArticleStatus;
 }
-
-export const CATEGORIES = [
-  "Plantation",
-  "Forests",
-  "Wildlife",
-  "Climate",
-  "Community",
-] as const;
 
 let idCounter = 0;
 export function newBlockId(): string {

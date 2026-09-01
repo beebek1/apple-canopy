@@ -7,13 +7,13 @@ import {
   listPostsApi,
   updatePostStatusApi,
   deletePostApi,
-} from "../auth.api"; // adjust path to your api file
+} from "../auth.api";
 import type { PostListItem } from "../auth.types";
+import { CATEGORIES } from "../../../shared/categories";
 
 type ArticleStatus = "published" | "draft";
 type StatusTab = "all" | ArticleStatus;
 
-const CATEGORIES = ["Plantation", "Forests", "Wildlife", "Climate", "Community"] as const;
 const STATUS_OPTIONS: ArticleStatus[] = ["published", "draft"];
 
 function toArticleStatus(s: PostListItem["status"]): ArticleStatus {
