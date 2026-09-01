@@ -8,6 +8,7 @@ import BlogList from "../modules/blogs/pages/UserBlogList";
 import BlogPage from "../modules/blogs/pages/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
 import AdminBlogList from "../modules/admin/pages/AdminBlogList";
+import SessionPanel from "../modules/admin/pages/SessionPanel";
 import BlogEditor from "../modules/admin/pages/BlogEditor";
 
 interface AppRoutesProps {
@@ -27,6 +28,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
 
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/admin/sessions" element={<SessionPanel />} />
         <Route path="/admin/blogs" element={<AdminBlogList />} />
         <Route path="/admin/blogs/:blogId" element={<BlogEditor />} />
       </Route>
