@@ -86,13 +86,8 @@ export default function Auth({ path = "/auth" }: AuthProps) {
         success: (res) => res.data?.message ?? "Login successful",
         error: (err) => err?.response?.data?.message || "Login failed",
       });
-
-      // Only reached on success — toast.promise rethrows on rejection,
-      // which sends us straight to the catch block below instead of here.
-      // Redirect to root, not back to whatever page was behind the modal:
-      // that's what was asked for, and it also sidesteps stale background
-      // state (e.g. a page that assumed the user was logged out).
       navigate("/", { replace: true });
+      window.location.reload();
     } catch {
       // toast.promise already surfaced the error toast. Don't close the
       // modal and don't clear the form — let them fix and resubmit.

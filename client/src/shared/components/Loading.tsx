@@ -1,32 +1,22 @@
 const styles = `
-.loader-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 90vh;
-  background: #fff;
-}
+/* HTML: <div class="loader"></div> */
 .loader {
-  width: 12px;
+  width: 45px;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: #000;
-  clip-path: inset(-220%);
-  animation: l28 2s infinite linear;
+  --c:no-repeat linear-gradient(#000 0 0);
+  background: 
+    var(--c) 0    0,
+    var(--c) 0    100%, 
+    var(--c) 50%  50%,   
+    var(--c) 100% 0, 
+    var(--c) 100% 100%;
+  animation: l13 1s infinite alternate;
 }
-@keyframes l28 {
-  0%  {box-shadow:0 0 0 0   , 40px 0,-40px 0,0 40px,0 -40px}
-  10% {box-shadow:0 0 0 0   , 12px 0,-40px 0,0 40px,0 -40px}
-  20% {box-shadow:0 0 0 4px , 0px  0,-40px 0,0 40px,0 -40px}
-  30% {box-shadow:0 0 0 4px , 0px  0,-12px 0,0 40px,0 -40px}
-  40% {box-shadow:0 0 0 8px , 0px  0,  0px 0,0 40px,0 -40px}
-  50% {box-shadow:0 0 0 8px , 0px  0,  0px 0,0 12px,0 -40px}
-  60% {box-shadow:0 0 0 12px, 0px  0,  0px 0,0  0px,0 -40px}
-  70% {box-shadow:0 0 0 12px, 0px  0,  0px 0,0  0px,0 -12px}
-  80% {box-shadow:0 0 0 16px, 0px  0,  0px 0,0  0px,0  0px }
-  90%,
-  100%{box-shadow:0 0 0 0   , 40px 0,-40px 0,0 40px,0 -40px}
+
+@keyframes l13 {
+ 0%,10%   {background-size:20% 100%}
+ 50%      {background-size:20%  20%}
+ 90%,100% {background-size:100% 20%}
 }
 `;
 

@@ -3,6 +3,8 @@ import { StatusCodes } from "http-status-codes";
 import { ApiError } from "../../utils/apiError.js";
 import  db  from "../../config/db.js";
 import type { CreateCheckoutSessionInput } from "./payment.validator.js";
+import emailSender from "../../utils/emailUtils/emailSender.js";
+import receiptEmail from "../../utils/emailUtils/receiptEmail.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2026-08-26.dahlia",
@@ -74,20 +76,47 @@ export const handleCheckoutCompleted = async (
   const donationId = session.metadata?.donationId;
 
   if (!donationId) {
+    console.error(
+      "checkout.session.completed with no donationId metadata:",
+      session.id,
+    );
     return;
   }
 
-  await db.donation.update({
+  const existing = await db.donation.findUnique({ where: { id: donationId } });
+  if (!existing || existing.status === "COMPLETED") {
+    return;
+  }
+
+  if (session.payment_status !== "paid") {
+    return;
+  }
+
+  const donation = await db.donation.update({
     where: { id: donationId },
     data: {
       status: "COMPLETED",
       stripePaymentIntentId:
         typeof session.payment_intent === "string"
           ? session.payment_intent
-          : (session.payment_intent?.id ?? null),
+          : session.payment_intent?.id,
       paidAt: new Date(),
     },
   });
+
+  if (donation.donorEmail) {
+    try {
+      await emailSender(
+        donation.donorEmail,
+        "Your donation receipt",
+        receiptEmail(donation.donorName, donation.amount),
+      );
+    } catch (err) {
+      // Don't let an email failure roll back or mask a successful payment —
+      // the donation is already COMPLETED and correct in the DB either way.
+      console.error("Failed to send donation receipt email:", err);
+    }
+  }
 };
 
 export const getDonationBySessionId = async (sessionId: string) => {
