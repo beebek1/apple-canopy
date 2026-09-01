@@ -9,7 +9,8 @@ import BlogList from "../modules/blogs/pages/UserBlogList";
 import BlogPage from "../modules/blogs/pages/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
 import AdminBlogList from "../modules/admin/pages/AdminBlogList";
-import SessionPanel from "../modules/admin/pages/SessionPanel";
+import DonationSuccess from "../modules/donation/pages/DonateSuccess";
+import SettingPanel from "../modules/donation/pages/SettingPanel";
 import BlogEditor from "../modules/admin/pages/BlogEditor";
 
 interface AppRoutesProps {
@@ -23,13 +24,14 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
       <Route path="/blogs" element={<BlogList />} />
       <Route path="/blogs/:id" element={<BlogPage />} />
       <Route path="/orchards" element={<Orchards />} />
+      <Route path="/donate/success" element={<DonationSuccess />} />
 
       <Route path="/auth" element={<Dashboard />} />
       <Route path="/verify-email" element={<Dashboard />} />
 
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/admin/sessions" element={<SessionPanel />} />
+        <Route path="/admin/sessions" element={<SettingPanel />} />
         <Route path="/admin/blogs" element={<AdminBlogList />} />
         <Route path="/admin/status/:slot" element={<Status />} />
         <Route path="/admin/blogs/:blogId" element={<BlogEditor />} />
