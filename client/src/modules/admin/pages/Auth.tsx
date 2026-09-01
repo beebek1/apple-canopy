@@ -77,24 +77,30 @@ export default function Auth({ path = "/auth" }: AuthProps) {
     }
     setError(null);
     setSubmitting(true);
-    try {
-      const payload: LoginRequest = { username: data.username.trim(), password: data.password };
 
+    const payload: LoginRequest = { username: data.username.trim(), password: data.password };
+
+    try {
       await toast.promise(loginApi(payload), {
         loading: "Checking credentials...",
         success: (res) => res.data?.message ?? "Login successful",
         error: (err) => err?.response?.data?.message || "Login failed",
       });
 
-      setTimeout(() => {
-        handleClose();
-      }, 800);
+      // Only reached on success — toast.promise rethrows on rejection,
+      // which sends us straight to the catch block below instead of here.
+      // Redirect to root, not back to whatever page was behind the modal:
+      // that's what was asked for, and it also sidesteps stale background
+      // state (e.g. a page that assumed the user was logged out).
+      navigate("/", { replace: true });
     } catch {
-      // toast.promise already surfaced the error toast; swallow here
-      // so submitting still resets in `finally` without an unhandled rejection.
-    } finally {
+      // toast.promise already surfaced the error toast. Don't close the
+      // modal and don't clear the form — let them fix and resubmit.
       setSubmitting(false);
+      return;
     }
+
+    setSubmitting(false);
   }
 
   return (
