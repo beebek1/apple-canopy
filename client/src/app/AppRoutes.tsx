@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./guards/ProtectedRoute";
 import NotFoundPage from "../shared/components/NotFound";
 
 import Dashboard from "../modules/dashboard/DashboardPage";
+import Status from "../modules/dashboard/AdminStatusPage";
 import BlogList from "../modules/blogs/pages/UserBlogList";
 import BlogPage from "../modules/blogs/pages/UserBlogPage";
 import Orchards from "../modules/orchards/ImpactMap";
@@ -30,6 +31,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ location }) => {
       <Route element={<ProtectedRoute />}>
         <Route path="/admin/sessions" element={<SessionPanel />} />
         <Route path="/admin/blogs" element={<AdminBlogList />} />
+        <Route path="/admin/status/:slot" element={<Status />} />
         <Route path="/admin/blogs/:blogId" element={<BlogEditor />} />
       </Route>
 
