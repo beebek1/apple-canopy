@@ -92,3 +92,27 @@ model Session {
 
   @@index([adminId])
 }
+
+enum DonationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+model Donation {
+  id                    String         @id @default(uuid())
+  donorName             String         @db.VarChar(255)
+  donorEmail            String?        @db.VarChar(255)
+  amount                Int            // cents
+  currency              String         @default("usd") @db.VarChar(10)
+  note                  String?        @db.VarChar(50)
+  status                DonationStatus @default(PENDING)
+  stripeSessionId       String?        @unique @db.VarChar(255)
+  stripePaymentIntentId String?        @db.VarChar(255)
+  paidAt                DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([status])
+}
