@@ -108,7 +108,3 @@ export const listCompletedDonations = async () => {
     orderBy: { createdAt: "desc" },
   });
 };
-
-export const getCheckoutSession = async (sessionId: string) => {
-  return stripe.checkout.sessions.retrieve(sessionId);
-};
