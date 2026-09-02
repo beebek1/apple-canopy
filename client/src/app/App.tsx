@@ -1,5 +1,6 @@
 import { BrowserRouter, useLocation } from 'react-router-dom'
 import type { Location } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import Navbar from '../shared/components/Navbar'
 import '../styles/App.css'
 import { Toaster } from 'react-hot-toast'
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AppShell />
+      <Analytics />
     </BrowserRouter>
   );
 };
